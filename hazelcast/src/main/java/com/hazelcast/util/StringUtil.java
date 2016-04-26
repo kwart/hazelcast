@@ -353,4 +353,14 @@ public final class StringUtil {
         list.removeAll(Arrays.asList(arr2));
         return list.toArray(new String[list.size()]);
     }
+
+    /**
+     * Returns {@code true} if given Strings are either {@link String#equals(Object)}, or both {@code null}.
+     * @param s1
+     * @param s2
+     * @return {@code true} if given Strings are equals or both {@code null}
+     */
+    public static boolean equals(String s1, String s2) {
+        return s1 == null ? s2 == null : (s1 == s2 || s1.equals(s2));
+    }
 }

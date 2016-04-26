@@ -56,11 +56,11 @@ public final class OverridePropertyRule implements TestRule {
         };
     }
 
-    private static void setOrClearProperty(String propertyName, String value) {
-        if (value == null) {
-            System.clearProperty(propertyName);
-        } else {
-            System.setProperty(propertyName, value);
-        }
+    public String setOrClear(String newValue) {
+        return setOrClearProperty(propertyName, newValue);
+    }
+
+    private static String setOrClearProperty(String propertyName, String value) {
+        return value == null ? System.clearProperty(propertyName) : System.setProperty(propertyName, value);
     }
 }

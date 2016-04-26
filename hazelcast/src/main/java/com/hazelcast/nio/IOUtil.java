@@ -588,7 +588,9 @@ public final class IOUtil {
 
         @Override
         protected Class<?> resolveClass(ObjectStreamClass desc) throws ClassNotFoundException {
-            return ClassLoaderUtil.loadClass(classLoader, desc.getName());
+            String name = desc.getName();
+            DeserializationChecker.checkClassNameForResolution(name);
+            return ClassLoaderUtil.loadClass(classLoader, name);
         }
 
         @Override
