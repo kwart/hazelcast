@@ -16,8 +16,10 @@
 
 package com.hazelcast.nio.ssl;
 
-import javax.net.ssl.SSLEngine;
+import java.net.InetSocketAddress;
 import java.util.Properties;
+
+import javax.net.ssl.SSLEngine;
 
 /**
  * The {@link SSLEngineFactory} is responsible for creating an SSLEngine instance.
@@ -45,5 +47,5 @@ public interface SSLEngineFactory {
      *                   while the other one will be in 'serverMode'.
      * @return the created SSLEngine.
      */
-    SSLEngine create(boolean clientMode);
+    SSLEngine create(boolean clientMode, InetSocketAddress sa);
 }
