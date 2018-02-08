@@ -30,6 +30,7 @@ import java.nio.channels.SocketChannel;
 
 import static com.hazelcast.nio.IOUtil.closeResource;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -79,17 +80,37 @@ public class AbstractChannelTest {
     private static class TestChannel extends AbstractChannel {
 
         private boolean throwExceptionOnClose;
+        private final ChannelConfig config = mock(ChannelConfig.class);
 
         TestChannel(SocketChannel socketChannel, boolean clientMode) {
             super(socketChannel, clientMode);
         }
 
         @Override
-        protected void onClose() throws IOException {
-            super.onClose();
+        public ChannelConfig config() {
+            return config;
+        }
+
+        @Override
+        protected void close0() throws IOException {
+            super.close0();
             if (throwExceptionOnClose) {
                 throw new IOException("Expected exception");
             }
+        }
+
+        @Override
+        public void start() {
+        }
+
+        @Override
+        public ChannelInboundPipeline inboundPipeline() {
+            return mock(ChannelInboundPipeline.class);
+        }
+
+        @Override
+        public ChannelOutboundPipeline outboundPipeline() {
+            return mock(ChannelOutboundPipeline.class);
         }
 
         @Override
@@ -105,10 +126,6 @@ public class AbstractChannelTest {
         @Override
         public boolean write(OutboundFrame frame) {
             return false;
-        }
-
-        @Override
-        public void flush() {
         }
     }
 

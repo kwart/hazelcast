@@ -42,9 +42,14 @@ abstract class NioPipelineTask implements Runnable {
     @Override
     public final void run() {
         if (pipeline.owner() == currentThread()) {
-            // the task is picked by the proper thread
-            run0();
+            // the task is executed by the proper thread
+            try {
+                run0();
+            } catch (Exception e) {
+                pipeline.onError(e);
+            }
         } else {
+            System.out.println("Migrating");
             // the pipeline is migrating or already has migrated
             // lets lets reschedule this task on the pipeline so
             // it will be picked up by the new owner.
@@ -52,5 +57,5 @@ abstract class NioPipelineTask implements Runnable {
         }
     }
 
-    protected abstract void run0();
+    protected abstract void run0() throws Exception;
 }
