@@ -564,7 +564,7 @@ public class ClientConnectionManagerImpl implements ClientConnectionManager, Con
             HazelcastProperties properties = client.getProperties();
             boolean directBuffer = properties.getBoolean(SOCKET_CLIENT_BUFFER_DIRECT);
 
-            Channel channel = channelFactory.create(socketChannel, true, directBuffer);
+            Channel channel = channelFactory.create(socketChannel, address, true, directBuffer);
 
             final ClientConnection clientConnection = new ClientConnection(
                     client, connectionIdGen.incrementAndGet(), channel);

@@ -370,8 +370,8 @@ public class TcpIpConnectionManager implements ConnectionManager, PacketHandler 
         //now you can send anything...
     }
 
-    Channel createChannel(SocketChannel socketChannel, boolean client) throws Exception {
-        Channel wrapper = channelFactory.create(socketChannel, client, ioService.useDirectSocketBuffer());
+    Channel createChannel(SocketChannel socketChannel, Address address, boolean client) throws Exception {
+        Channel wrapper = channelFactory.create(socketChannel, address, client, ioService.useDirectSocketBuffer());
         acceptedSockets.add(wrapper);
         return wrapper;
     }

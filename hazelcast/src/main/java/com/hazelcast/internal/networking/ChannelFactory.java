@@ -18,6 +18,8 @@ package com.hazelcast.internal.networking;
 
 import java.nio.channels.SocketChannel;
 
+import com.hazelcast.nio.Address;
+
 /**
  * A factory for creating {@link Channel} instances.
  *
@@ -30,5 +32,5 @@ public interface ChannelFactory {
     /**
      * Creates the Channel.
      */
-    Channel create(SocketChannel channel, boolean clientMode, boolean directBuffer) throws Exception;
+    Channel create(SocketChannel channel, Address address, boolean clientMode, boolean directBuffer) throws Exception;
 }

@@ -18,13 +18,14 @@ package com.hazelcast.internal.networking.nio;
 
 import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.internal.networking.ChannelFactory;
+import com.hazelcast.nio.Address;
 
 import java.nio.channels.SocketChannel;
 
 public class NioChannelFactory implements ChannelFactory {
 
     @Override
-    public Channel create(SocketChannel channel, boolean clientMode, boolean directBuffer) throws Exception {
+    public Channel create(SocketChannel channel, Address address, boolean clientMode, boolean directBuffer) throws Exception {
         return new NioChannel(channel, clientMode);
     }
 }

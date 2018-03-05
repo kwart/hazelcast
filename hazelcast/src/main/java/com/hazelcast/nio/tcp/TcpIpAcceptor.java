@@ -243,7 +243,7 @@ public class TcpIpAcceptor implements MetricsProvider {
             try {
                 SocketChannel socketChannel = serverSocketChannel.accept();
                 if (socketChannel != null) {
-                    channel = connectionManager.createChannel(socketChannel, false);
+                    channel = connectionManager.createChannel(socketChannel, null, false);
                 }
             } catch (Exception e) {
                 exceptionCount.inc();

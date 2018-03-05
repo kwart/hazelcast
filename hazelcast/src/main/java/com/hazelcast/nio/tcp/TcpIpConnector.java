@@ -179,7 +179,7 @@ public class TcpIpConnector {
                 if (logger.isFinestEnabled()) {
                     logger.finest("Successfully connected to: " + address + " using socket " + socketChannel.socket());
                 }
-                Channel channel = connectionManager.createChannel(socketChannel, true);
+                Channel channel = connectionManager.createChannel(socketChannel, address, true);
                 ioService.interceptSocket(socketChannel.socket(), false);
                 socketChannel.configureBlocking(false);
                 TcpIpConnection connection = connectionManager.newConnection(channel, address);

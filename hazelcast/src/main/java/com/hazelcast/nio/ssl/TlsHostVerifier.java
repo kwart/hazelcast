@@ -16,7 +16,6 @@
 
 package com.hazelcast.nio.ssl;
 
-import java.net.InetAddress;
 import java.security.cert.Certificate;
 import java.util.Properties;
 
@@ -36,13 +35,24 @@ public interface TlsHostVerifier {
     void init(Properties properties);
 
     /**
-     * Verifies the given host address and its list of {@link Certificate}s are valid combination for this
+     * Verifies the given server IP address (and possibly a hostname) and its list of {@link Certificate}s are valid combination for this
      * {@link TlsHostVerifier} implementation. If the verification fails, the {@link SSLPeerUnverifiedException} is thrown.
      *
-     * @param hostAddress Peer address.
-     * @param hostCertificates Peer certificates. May be {@code null} if checking is enabled on the server side of TLS connection
-     *        and a TLS client comes without authentication.
-     * @throws SSLPeerUnverifiedException if the host was not verified.
+     * @param ipAddress Server IP address.
+     * @param hostName Server host name address. May be {@code null}.
+     * @param serverCertificates Peer certificates (not-{@code null})
+     * @throws SSLPeerUnverifiedException if the server was not verified.
      */
-    void verifyHost(InetAddress hostAddress, Certificate[] hostCertificates) throws SSLPeerUnverifiedException;
+    void verifyServer(byte[] ipAddress, String hostName, Certificate[] serverCertificates) throws SSLPeerUnverifiedException;
+
+    /**
+     * Verifies the given client IP address and its list of {@link Certificate}s are valid combination for this
+     * {@link TlsHostVerifier} implementation. If the verification fails, the {@link SSLPeerUnverifiedException} is thrown.
+     *
+     * @param ipAddress Client IP address.
+     * @param clientCertificates Peer certificates. May be {@code null} if checking is enabled on the server side of TLS connection
+     *        and a TLS client comes without authentication.
+     * @throws SSLPeerUnverifiedException if the client was not verified.
+     */
+    void verifyClient(byte[] ipAddress, Certificate[] clientCertificates) throws SSLPeerUnverifiedException;
 }
