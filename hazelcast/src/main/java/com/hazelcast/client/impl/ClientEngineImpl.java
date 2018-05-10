@@ -25,7 +25,7 @@ import com.hazelcast.client.ClientEventType;
 import com.hazelcast.client.impl.operations.ClientDisconnectionOperation;
 import com.hazelcast.client.impl.operations.GetConnectedClientsOperation;
 import com.hazelcast.client.impl.operations.OnJoinClientOperation;
-import com.hazelcast.client.impl.protocol.ClientExceptionFactory;
+import com.hazelcast.client.impl.protocol.ClientExceptions;
 import com.hazelcast.client.impl.protocol.ClientMessage;
 import com.hazelcast.client.impl.protocol.MessageTaskFactory;
 import com.hazelcast.client.impl.protocol.task.AuthenticationCustomCredentialsMessageTask;
@@ -136,7 +136,7 @@ public class ClientEngineImpl implements ClientEngine, CoreService, PreJoinAware
     private final ConnectionListener connectionListener = new ConnectionListenerImpl();
 
     private final MessageTaskFactory messageTaskFactory;
-    private final ClientExceptionFactory clientExceptionFactory;
+    private final ClientExceptions clientExceptions;
     private final int endpointRemoveDelaySeconds;
     private final ClientPartitionListenerService partitionListenerService;
 
@@ -150,14 +150,14 @@ public class ClientEngineImpl implements ClientEngine, CoreService, PreJoinAware
         this.queryExecutor = newClientQueryExecutor();
         this.clientManagementExecutor = newClientsManagementExecutor();
         this.messageTaskFactory = new CompositeMessageTaskFactory(nodeEngine);
-        this.clientExceptionFactory = initClientExceptionFactory();
+        this.clientExceptions = initClientExceptionFactory();
         this.endpointRemoveDelaySeconds = node.getProperties().getInteger(GroupProperty.CLIENT_ENDPOINT_REMOVE_DELAY_SECONDS);
         this.partitionListenerService = new ClientPartitionListenerService(nodeEngine);
     }
 
-    private ClientExceptionFactory initClientExceptionFactory() {
+    private ClientExceptions initClientExceptionFactory() {
         boolean jcacheAvailable = JCacheDetector.isJCacheAvailable(nodeEngine.getConfigClassLoader());
-        return new ClientExceptionFactory(jcacheAvailable);
+        return new ClientExceptions(jcacheAvailable);
     }
 
     private ExecutorService newClientsManagementExecutor() {
@@ -301,8 +301,8 @@ public class ClientEngineImpl implements ClientEngine, CoreService, PreJoinAware
         return endpointManager;
     }
 
-    public ClientExceptionFactory getClientExceptionFactory() {
-        return clientExceptionFactory;
+    public ClientExceptions getClientExceptions() {
+        return clientExceptions;
     }
 
     @Override

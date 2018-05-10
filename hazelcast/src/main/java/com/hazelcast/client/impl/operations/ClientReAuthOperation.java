@@ -16,7 +16,7 @@
 
 package com.hazelcast.client.impl.operations;
 
-import com.hazelcast.client.AuthenticationException;
+import com.hazelcast.client.StubAuthenticationException;
 import com.hazelcast.client.ClientEndpoint;
 import com.hazelcast.client.impl.ClientDataSerializerHook;
 import com.hazelcast.client.impl.ClientEngineImpl;
@@ -66,7 +66,7 @@ public class ClientReAuthOperation
             String message = "Server already processed a newer authentication from client with UUID " + clientUuid
                     + ". Not applying requested ownership change to " + memberUuid;
             logger.info(message);
-            throw new AuthenticationException(message);
+            throw new StubAuthenticationException(message);
         }
         Set<ClientEndpoint> endpoints = engine.getEndpointManager().getEndpoints(clientUuid);
         for (ClientEndpoint endpoint : endpoints) {
@@ -91,7 +91,7 @@ public class ClientReAuthOperation
 
     @Override
     public void logError(Throwable e) {
-        if (!(e instanceof AuthenticationException)) {
+        if (!(e instanceof StubAuthenticationException)) {
             super.logError(e);
         }
     }

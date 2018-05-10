@@ -107,11 +107,12 @@ public class ClientExceptionFactoryTest extends HazelcastTestSupport {
     @Parameter
     public Throwable throwable;
 
+    private ClientExceptions exceptions = new ClientExceptions(true);
     private ClientExceptionFactory exceptionFactory = new ClientExceptionFactory(true);
 
     @Test
     public void testException() {
-        ClientMessage exceptionMessage = exceptionFactory.createExceptionMessage(throwable);
+        ClientMessage exceptionMessage = exceptions.createExceptionMessage(throwable);
         ClientMessage responseMessage = ClientMessage.createForDecode(exceptionMessage.buffer(), 0);
         Throwable resurrectedThrowable = exceptionFactory.createException(responseMessage);
 
@@ -129,7 +130,7 @@ public class ClientExceptionFactoryTest extends HazelcastTestSupport {
             return false;
         }
 
-        if (exceptionFactory.isKnownClass(expected.getClass())) {
+        if (exceptions.isKnownClass(expected.getClass())) {
             if (!expected.getClass().equals(actual.getClass())) {
                 return false;
             }

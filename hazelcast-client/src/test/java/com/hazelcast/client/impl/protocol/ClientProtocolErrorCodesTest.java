@@ -38,11 +38,12 @@ public class ClientProtocolErrorCodesTest extends HazelcastTestSupport {
 
     @Test
     public void testUndefinedException() {
+        ClientExceptions exceptions = new ClientExceptions(false);
         ClientExceptionFactory exceptionFactory = new ClientExceptionFactory(false);
         class MyException extends Exception {
         }
 
-        ClientMessage exceptionMessage = exceptionFactory.createExceptionMessage(new MyException());
+        ClientMessage exceptionMessage = exceptions.createExceptionMessage(new MyException());
         ClientMessage responseMessage = ClientMessage.createForDecode(exceptionMessage.buffer(), 0);
         Throwable resurrectedThrowable = exceptionFactory.createException(responseMessage);
         assertEquals(UndefinedErrorCodeException.class, resurrectedThrowable.getClass());

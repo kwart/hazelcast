@@ -16,8 +16,7 @@
 
 package com.hazelcast.client.protocol;
 
-import com.hazelcast.client.impl.protocol.ClientExceptionFactory;
-import com.hazelcast.client.impl.protocol.ClientExceptionFactory.ExceptionFactory;
+import com.hazelcast.client.impl.protocol.ClientExceptions;
 import com.hazelcast.client.impl.protocol.ClientProtocolErrorCodes;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.test.HazelcastParallelClassRunner;
@@ -37,7 +36,7 @@ public class ClientExceptionFactoryTestSimple {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    private ClientExceptionFactory exceptionFactory = new ClientExceptionFactory(false);
+    private ClientExceptions exceptionFactory = new ClientExceptions(false);
 
     private static class MyException extends Exception {
     }
@@ -46,36 +45,21 @@ public class ClientExceptionFactoryTestSimple {
     public void testDuplicateErrorCode() {
         thrown.expect(HazelcastException.class);
         exceptionFactory.register(ClientProtocolErrorCodes.ARRAY_INDEX_OUT_OF_BOUNDS,
-                MyException.class, new ExceptionFactory() {
-                    @Override
-                    public Throwable createException(String message, Throwable cause) {
-                        return new MyException();
-                    }
-                });
+                MyException.class);
     }
 
     @Test
     public void testDuplicateExceptionClass() {
         thrown.expect(HazelcastException.class);
         exceptionFactory.register(10000,
-                ArrayIndexOutOfBoundsException.class, new ExceptionFactory() {
-                    @Override
-                    public Throwable createException(String message, Throwable cause) {
-                        return new ArrayIndexOutOfBoundsException(message);
-                    }
-                });
+                ArrayIndexOutOfBoundsException.class);
     }
 
     @Test
     public void testIncorrectClassFromFactory() {
         thrown.expect(HazelcastException.class);
         exceptionFactory.register(10000,
-                MyException.class, new ExceptionFactory() {
-                    @Override
-                    public Throwable createException(String message, Throwable cause) {
-                        return new ArrayIndexOutOfBoundsException(message);
-                    }
-                });
+                MyException.class);
     }
 
 }

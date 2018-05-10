@@ -81,12 +81,10 @@ import java.io.UTFDataFormatException;
 import java.net.SocketException;
 import java.net.URISyntaxException;
 import java.security.AccessControlException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CancellationException;
@@ -127,7 +125,6 @@ public class ClientExceptionFactory {
     private static final int CAUSED_BY_STACKTRACE_PARSER_CLASS_NAME_GROUP = 2;
     private static final int CAUSED_BY_STACKTRACE_PARSER_MESSAGE_GROUP = 4;
 
-    private final Map<Class, Integer> classToInt = new HashMap<Class, Integer>();
     private final Map<Integer, ExceptionFactory> intToFactory = new HashMap<Integer, ExceptionFactory>();
 
     public ClientExceptionFactory(boolean jcacheAvailable) {
@@ -725,44 +722,6 @@ public class ClientExceptionFactory {
         }
     }
 
-    public ClientMessage createExceptionMessage(Throwable throwable) {
-        int errorCode = getErrorCode(throwable);
-        String message = throwable.getMessage();
-
-        // Combine the stack traces of causes recursively into one long stack trace.
-        List<StackTraceElement> combinedStackTrace = new ArrayList<StackTraceElement>();
-        Throwable t = throwable;
-        while (t != null) {
-            combinedStackTrace.addAll(Arrays.asList(t.getStackTrace()));
-            t = t.getCause();
-            // add separator, if there is one more cause
-            if (t != null) {
-                // don't rely on Throwable.toString(), which contains the same logic, but rather use our own, as it might be overridden
-                String throwableToString = t.getClass().getName() + (t.getLocalizedMessage() != null ? ": " + t.getLocalizedMessage() : "");
-
-                combinedStackTrace.add(new StackTraceElement(CAUSED_BY_STACKTRACE_MARKER
-                        + " (" + getErrorCode(t) + ") " + throwableToString
-                        + " ------", "", null, -1));
-            }
-        }
-
-        final int causeErrorCode;
-        final String causeClassName;
-
-        Throwable cause = throwable.getCause();
-        if (cause != null) {
-            causeErrorCode = getErrorCode(cause);
-            causeClassName = cause.getClass().getName();
-        } else {
-            causeErrorCode = ClientProtocolErrorCodes.UNDEFINED;
-            causeClassName = null;
-        }
-
-        StackTraceElement[] combinedStackTraceArray = combinedStackTrace.toArray(new StackTraceElement[0]);
-        return ErrorCodec.encode(errorCode, throwable.getClass().getName(), message, combinedStackTraceArray,
-                causeErrorCode, causeClassName);
-    }
-
     private Throwable createException(int errorCode, String className, String message, Throwable cause) {
         ExceptionFactory exceptionFactory = intToFactory.get(errorCode);
         Throwable throwable;
@@ -774,12 +733,7 @@ public class ClientExceptionFactory {
         return throwable;
     }
 
-    public void register(int errorCode, Class clazz, ExceptionFactory exceptionFactory) {
-        Integer currentCode = classToInt.get(clazz);
-
-        if (currentCode != null) {
-            throw new HazelcastException("Class " + clazz.getName() + " already added with code: " + currentCode);
-        }
+    private void register(int errorCode, Class clazz, ExceptionFactory exceptionFactory) {
 
         if (intToFactory.containsKey(errorCode)) {
             throw new HazelcastException("Code " + errorCode + " already used");
@@ -789,22 +743,9 @@ public class ClientExceptionFactory {
             throw new HazelcastException("Exception factory did not produce an instance of expected class");
         }
 
-        classToInt.put(clazz, errorCode);
         intToFactory.put(errorCode, exceptionFactory);
     }
 
-    private int getErrorCode(Throwable e) {
-        Integer errorCode = classToInt.get(e.getClass());
-        if (errorCode == null) {
-            return ClientProtocolErrorCodes.UNDEFINED;
-        }
-        return errorCode;
-    }
-
-    // package-access for test
-    boolean isKnownClass(Class<? extends Throwable> aClass) {
-        return classToInt.containsKey(aClass);
-    }
 
 
     public interface ExceptionFactory {

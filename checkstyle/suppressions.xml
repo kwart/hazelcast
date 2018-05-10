@@ -151,6 +151,8 @@
               files="com[\\/]hazelcast[\\/]client[\\/]impl[\\/]protocol[\\/]DefaultMessageTaskFactoryProvider"/>
     <suppress checks="ExecutableStatementCount|MethodCount|Length|ClassDataAbstractionCoupling|ClassFanOutComplexity"
               files="com[\\/]hazelcast[\\/]client[\\/]impl[\\/]protocol[\\/]ClientExceptionFactory.java"/>
+    <suppress checks="ExecutableStatementCount|MethodCount|Length|ClassDataAbstractionCoupling|ClassFanOutComplexity"
+              files="com[\\/]hazelcast[\\/]client[\\/]impl[\\/]protocol[\\/]ClientExceptions.java"/>
     <suppress checks="MethodCount" files="com[\\/]hazelcast[\\/]client[\\/]impl[\\/]protocol[\\/]ClientMessage"/>
     <suppress checks="MethodCount" files="com[\\/]hazelcast[\\/]client[\\/]impl[\\/]protocol[\\/]util[\\/]MessageFlyweight"/>
 
