@@ -18,7 +18,6 @@ package com.hazelcast.client.connection.nio;
 
 import com.hazelcast.client.AuthenticationException;
 import com.hazelcast.client.ClientExtension;
-import com.hazelcast.client.ClientTypes;
 import com.hazelcast.client.HazelcastClientOfflineException;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.config.SocketOptions;
@@ -26,6 +25,7 @@ import com.hazelcast.client.connection.AddressProvider;
 import com.hazelcast.client.connection.AddressTranslator;
 import com.hazelcast.client.connection.ClientConnectionManager;
 import com.hazelcast.client.connection.ClientConnectionStrategy;
+import com.hazelcast.client.core.impl.ClientTypes;
 import com.hazelcast.client.impl.HazelcastClientInstanceImpl;
 import com.hazelcast.client.impl.LifecycleServiceImpl;
 import com.hazelcast.client.impl.client.ClientPrincipal;

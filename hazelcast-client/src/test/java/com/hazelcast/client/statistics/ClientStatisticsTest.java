@@ -20,7 +20,7 @@ import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.connection.nio.ClientConnection;
-import com.hazelcast.client.impl.ClientEngineImpl;
+import com.hazelcast.client.core.impl.ClientEngineImpl;
 import com.hazelcast.client.impl.HazelcastClientInstanceImpl;
 import com.hazelcast.client.impl.statistics.Statistics;
 import com.hazelcast.client.test.ClientTestSupport;

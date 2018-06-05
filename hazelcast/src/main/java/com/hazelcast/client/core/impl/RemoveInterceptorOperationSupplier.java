@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package com.hazelcast.client.impl;
+package com.hazelcast.client.core.impl;
 
-import com.hazelcast.client.impl.operations.ClientReAuthOperation;
+import com.hazelcast.map.impl.operation.RemoveInterceptorOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.util.function.Supplier;
 
-public class ReAuthenticationOperationSupplier implements Supplier<Operation> {
+public class RemoveInterceptorOperationSupplier implements Supplier<Operation> {
 
-    private final String uuid;
-    private final long authCorrelationId;
+    private final String id;
+    private final String name;
 
-    public ReAuthenticationOperationSupplier(String uuid, long authCorrelationId) {
-        this.uuid = uuid;
-        this.authCorrelationId = authCorrelationId;
+    public RemoveInterceptorOperationSupplier(String id, String name) {
+        this.id = id;
+        this.name = name;
     }
 
     @Override
     public Operation get() {
-        return new ClientReAuthOperation(uuid, authCorrelationId);
+        return new RemoveInterceptorOperation(name, id);
     }
 }

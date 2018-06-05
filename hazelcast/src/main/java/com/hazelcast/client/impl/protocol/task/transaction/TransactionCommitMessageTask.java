@@ -16,7 +16,7 @@
 
 package com.hazelcast.client.impl.protocol.task.transaction;
 
-import com.hazelcast.client.impl.ClientEngineImpl;
+import com.hazelcast.client.core.impl.ClientEngineImpl;
 import com.hazelcast.client.impl.protocol.ClientMessage;
 import com.hazelcast.client.impl.protocol.codec.TransactionCommitCodec;
 import com.hazelcast.client.impl.protocol.task.AbstractTransactionalMessageTask;

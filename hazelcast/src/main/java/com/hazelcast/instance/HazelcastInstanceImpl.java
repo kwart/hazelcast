@@ -18,7 +18,7 @@ package com.hazelcast.instance;
 
 import com.hazelcast.cardinality.CardinalityEstimator;
 import com.hazelcast.cardinality.impl.CardinalityEstimatorService;
-import com.hazelcast.client.impl.ClientServiceProxy;
+import com.hazelcast.client.core.impl.ClientServiceProxy;
 import com.hazelcast.collection.impl.list.ListService;
 import com.hazelcast.collection.impl.queue.QueueService;
 import com.hazelcast.collection.impl.set.SetService;

@@ -14,7 +14,19 @@
  * limitations under the License.
  */
 
+package com.hazelcast.client.core.impl;
+
+import com.hazelcast.spi.annotation.PrivateApi;
+
+
 /**
- * <p>This package contains the serverside client functionality</p>
+ * This is equivalent of AuthenticationException from client side. When this is thrown to client
+ * AuthenticationException comes out of from other side.
  */
-package com.hazelcast.client;
+@PrivateApi
+public class StubAuthenticationException extends Exception {
+
+    public StubAuthenticationException(String message) {
+        super(message);
+    }
+}

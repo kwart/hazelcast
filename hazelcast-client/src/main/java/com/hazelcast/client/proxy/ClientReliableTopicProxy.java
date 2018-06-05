@@ -262,7 +262,7 @@ public class ClientReliableTopicProxy<E> extends ClientProxy implements ITopic<E
         private Message<E> toMessage(ReliableTopicMessage m) {
             Member member = null;
             if (m.getPublisherAddress() != null) {
-                member = new com.hazelcast.client.impl.MemberImpl(m.getPublisherAddress(), MemberVersion.UNKNOWN);
+                member = new com.hazelcast.client.core.impl.MemberImpl(m.getPublisherAddress(), MemberVersion.UNKNOWN);
             }
             E payload = serializationService.toObject(m.getPayload());
             return new Message<E>(name, payload, m.getPublishTime(), member);

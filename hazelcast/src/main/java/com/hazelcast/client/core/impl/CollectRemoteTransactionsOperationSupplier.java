@@ -14,27 +14,16 @@
  * limitations under the License.
  */
 
-package com.hazelcast.client.impl;
+package com.hazelcast.client.core.impl;
 
-import com.hazelcast.map.MapInterceptor;
-import com.hazelcast.map.impl.operation.AddInterceptorOperation;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.transaction.impl.xa.operations.CollectRemoteTransactionsOperation;
 import com.hazelcast.util.function.Supplier;
 
-public class AddInterceptorOperationSupplier implements Supplier<Operation> {
-
-    private final String id;
-    private final String name;
-    private final MapInterceptor mapInterceptor;
-
-    public AddInterceptorOperationSupplier(String id, String name, MapInterceptor mapInterceptor) {
-        this.id = id;
-        this.name = name;
-        this.mapInterceptor = mapInterceptor;
-    }
+public class CollectRemoteTransactionsOperationSupplier implements Supplier<Operation> {
 
     @Override
     public Operation get() {
-        return new AddInterceptorOperation(id, mapInterceptor, name);
+        return new CollectRemoteTransactionsOperation();
     }
 }

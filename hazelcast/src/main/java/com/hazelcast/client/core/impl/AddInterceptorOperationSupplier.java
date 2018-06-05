@@ -14,24 +14,27 @@
  * limitations under the License.
  */
 
-package com.hazelcast.client.impl;
+package com.hazelcast.client.core.impl;
 
-import com.hazelcast.map.impl.operation.RemoveInterceptorOperation;
+import com.hazelcast.map.MapInterceptor;
+import com.hazelcast.map.impl.operation.AddInterceptorOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.util.function.Supplier;
 
-public class RemoveInterceptorOperationSupplier implements Supplier<Operation> {
+public class AddInterceptorOperationSupplier implements Supplier<Operation> {
 
     private final String id;
     private final String name;
+    private final MapInterceptor mapInterceptor;
 
-    public RemoveInterceptorOperationSupplier(String id, String name) {
+    public AddInterceptorOperationSupplier(String id, String name, MapInterceptor mapInterceptor) {
         this.id = id;
         this.name = name;
+        this.mapInterceptor = mapInterceptor;
     }
 
     @Override
     public Operation get() {
-        return new RemoveInterceptorOperation(name, id);
+        return new AddInterceptorOperation(id, mapInterceptor, name);
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.client.impl;
+package com.hazelcast.client.core.impl;
 
 import com.hazelcast.core.Member;
 import com.hazelcast.instance.AbstractMember;

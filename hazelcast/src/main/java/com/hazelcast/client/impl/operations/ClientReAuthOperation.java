@@ -16,10 +16,10 @@
 
 package com.hazelcast.client.impl.operations;
 
-import com.hazelcast.client.StubAuthenticationException;
-import com.hazelcast.client.ClientEndpoint;
-import com.hazelcast.client.impl.ClientDataSerializerHook;
-import com.hazelcast.client.impl.ClientEngineImpl;
+import com.hazelcast.client.core.impl.ClientDataSerializerHook;
+import com.hazelcast.client.core.impl.ClientEndpoint;
+import com.hazelcast.client.core.impl.ClientEngineImpl;
+import com.hazelcast.client.core.impl.StubAuthenticationException;
 import com.hazelcast.client.impl.client.ClientPrincipal;
 import com.hazelcast.core.MemberLeftException;
 import com.hazelcast.logging.ILogger;

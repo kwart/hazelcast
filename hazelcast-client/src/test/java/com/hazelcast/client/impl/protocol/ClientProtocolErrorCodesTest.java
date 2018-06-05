@@ -17,6 +17,7 @@
 package com.hazelcast.client.impl.protocol;
 
 import com.hazelcast.client.UndefinedErrorCodeException;
+import com.hazelcast.client.impl.ClientExceptionFactory;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;

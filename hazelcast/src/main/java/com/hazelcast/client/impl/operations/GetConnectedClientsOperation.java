@@ -16,9 +16,9 @@
 
 package com.hazelcast.client.impl.operations;
 
-import com.hazelcast.client.impl.ClientDataSerializerHook;
-import com.hazelcast.client.impl.ClientEndpointImpl;
-import com.hazelcast.client.impl.ClientEngineImpl;
+import com.hazelcast.client.core.impl.ClientDataSerializerHook;
+import com.hazelcast.client.core.impl.ClientEndpointImpl;
+import com.hazelcast.client.core.impl.ClientEngineImpl;
 import com.hazelcast.core.Client;
 import com.hazelcast.core.ClientType;
 import com.hazelcast.spi.ReadonlyOperation;

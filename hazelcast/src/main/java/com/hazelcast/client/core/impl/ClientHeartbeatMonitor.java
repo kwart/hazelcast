@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package com.hazelcast.client.impl;
+package com.hazelcast.client.core.impl;
 
-import com.hazelcast.client.ClientEndpoint;
-import com.hazelcast.client.ClientEndpointManager;
 import com.hazelcast.core.ClientType;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Connection;

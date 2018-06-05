@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.client;
+package com.hazelcast.client.core.impl;
 
 import com.hazelcast.nio.Connection;
 import com.hazelcast.spi.annotation.PrivateApi;
@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * A manager for {@link com.hazelcast.client.ClientEndpoint}s.
+ * A manager for {@link com.hazelcast.client.core.impl.ClientEndpoint}s.
  *
  * All the methods are thread-safe.
  */

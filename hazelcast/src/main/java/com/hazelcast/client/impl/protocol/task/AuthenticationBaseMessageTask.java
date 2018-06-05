@@ -16,8 +16,8 @@
 
 package com.hazelcast.client.impl.protocol.task;
 
-import com.hazelcast.client.ClientTypes;
-import com.hazelcast.client.impl.ReAuthenticationOperationSupplier;
+import com.hazelcast.client.core.impl.ClientTypes;
+import com.hazelcast.client.core.impl.ReAuthenticationOperationSupplier;
 import com.hazelcast.client.impl.client.ClientPrincipal;
 import com.hazelcast.client.impl.protocol.AuthenticationStatus;
 import com.hazelcast.client.impl.protocol.ClientMessage;

@@ -14,16 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.client.impl;
-
-import com.hazelcast.spi.Operation;
-import com.hazelcast.transaction.impl.xa.operations.CollectRemoteTransactionsOperation;
-import com.hazelcast.util.function.Supplier;
-
-public class CollectRemoteTransactionsOperationSupplier implements Supplier<Operation> {
-
-    @Override
-    public Operation get() {
-        return new CollectRemoteTransactionsOperation();
-    }
-}
+/**
+ * <p>This package contains the serverside client functionality</p>
+ */
+package com.hazelcast.client.core.impl;

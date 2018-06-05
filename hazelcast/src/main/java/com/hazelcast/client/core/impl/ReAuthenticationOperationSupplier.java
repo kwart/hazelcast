@@ -14,19 +14,24 @@
  * limitations under the License.
  */
 
-package com.hazelcast.client;
+package com.hazelcast.client.core.impl;
 
-import com.hazelcast.spi.annotation.PrivateApi;
+import com.hazelcast.client.impl.operations.ClientReAuthOperation;
+import com.hazelcast.spi.Operation;
+import com.hazelcast.util.function.Supplier;
 
+public class ReAuthenticationOperationSupplier implements Supplier<Operation> {
 
-/**
- * This is equivalent of AuthenticationException from client side. When this is thrown to client
- * AuthenticationException comes out of from other side.
- */
-@PrivateApi
-public class StubAuthenticationException extends Exception {
+    private final String uuid;
+    private final long authCorrelationId;
 
-    public StubAuthenticationException(String message) {
-        super(message);
+    public ReAuthenticationOperationSupplier(String uuid, long authCorrelationId) {
+        this.uuid = uuid;
+        this.authCorrelationId = authCorrelationId;
+    }
+
+    @Override
+    public Operation get() {
+        return new ClientReAuthOperation(uuid, authCorrelationId);
     }
 }
