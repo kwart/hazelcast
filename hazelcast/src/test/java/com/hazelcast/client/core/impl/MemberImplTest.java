@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.client.coreimpl;
+package com.hazelcast.client.core.impl;
 
 import com.hazelcast.client.core.impl.MemberImpl;
 import com.hazelcast.nio.Address;
