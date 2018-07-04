@@ -16,27 +16,21 @@
 
 package com.hazelcast.nio.tcp;
 
-import com.hazelcast.client.impl.protocol.util.ClientMessageEncoder;
-import com.hazelcast.internal.networking.ChannelOutboundHandler;
-import com.hazelcast.internal.networking.HandlerStatus;
-import com.hazelcast.nio.IOService;
-import com.hazelcast.nio.ascii.TextEncoder;
-import com.hazelcast.spi.properties.HazelcastProperties;
-
-import java.nio.ByteBuffer;
-
-import static com.hazelcast.internal.networking.ChannelOption.SO_SNDBUF;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
 import static com.hazelcast.internal.networking.HandlerStatus.DIRTY;
-import static com.hazelcast.nio.IOService.KILO_BYTE;
 import static com.hazelcast.nio.IOUtil.compactOrClear;
-import static com.hazelcast.nio.Protocols.CLIENT_BINARY_NEW;
-import static com.hazelcast.nio.Protocols.CLUSTER;
-import static com.hazelcast.nio.Protocols.PROTOCOL_LENGTH;
-import static com.hazelcast.nio.ascii.TextEncoder.TEXT_ENCODER;
-import static com.hazelcast.spi.properties.GroupProperty.SOCKET_CLIENT_SEND_BUFFER_SIZE;
-import static com.hazelcast.spi.properties.GroupProperty.SOCKET_SEND_BUFFER_SIZE;
-import static com.hazelcast.util.StringUtil.stringToBytes;
+
+import java.nio.ByteBuffer;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import org.ietf.jgss.GSSContext;
+import org.ietf.jgss.GSSException;
+import org.ietf.jgss.MessageProp;
+
+import com.hazelcast.internal.networking.ChannelOutboundHandler;
+import com.hazelcast.internal.networking.HandlerStatus;
+import com.hazelcast.util.ExceptionUtil;
 
 /**
  * The ProtocolEncoder is responsible for writing the protocol and once the protocol
@@ -47,37 +41,34 @@ import static com.hazelcast.util.StringUtil.stringToBytes;
  * of the connection will wait till it has received the protocol and then will only
  * send the protocol if the client side was a member.
  */
-public class KerberosEncoder extends ChannelOutboundHandler<Void, ByteBuffer> {
+public class KerberosEncoder extends ChannelOutboundHandler<ByteBuffer, ByteBuffer> {
 
-    private final IOService ioService;
-    private final HazelcastProperties props;
-    private volatile String inboundProtocol;
-    private boolean clusterProtocolBuffered;
+    private final Queue<byte[]> tokenQueue;
+    private final GSSContext context;
+    private byte[] activeToken;
+    private int activeTokenPos;
 
-    public KerberosEncoder(IOService ioService) {
-        this.ioService = ioService;
-        this.props = ioService.properties();
+    public KerberosEncoder(GSSContext context) {
+        this.context= context;
+        this.tokenQueue = new ConcurrentLinkedQueue<byte[]>();
     }
-
+    
     @Override
     public void handlerAdded() {
-        initDstBuffer(PROTOCOL_LENGTH);
+        initDstBuffer(2048);
 
-        if (channel.isClientMode()) {
-            // from the clientSide of a connection, we always send the cluster protocol to a fellow member.
-            inboundProtocol = CLUSTER;
+        if (channel.isClientMode() && !context.isEstablished()) {
+            try {
+                tokenQueue.offer(context.initSecContext(new byte[0], 0, 0));
+            } catch (GSSException e) {
+                ExceptionUtil.rethrow(e);
+            }
         }
     }
 
-    /**
-     * Signals the ProtocolEncoder that the protocol is known. This call will be
-     * made by the ProtocolDecoder as soon as it knows the inbound protocol.
-     *
-     * @param inboundProtocol
-     */
-    void signalProtocolEstablished(String inboundProtocol) {
-        assert !channel.isClientMode() : "Signal protocol should only be made on channel in serverMode";
-        this.inboundProtocol = inboundProtocol;
+    void writeToken(byte[] token) {
+        tokenQueue.offer(token);
+        System.out.println("Token to write: " + token.length);
         channel.outboundPipeline().wakeup();
     }
 
@@ -86,80 +77,55 @@ public class KerberosEncoder extends ChannelOutboundHandler<Void, ByteBuffer> {
         compactOrClear(dst);
 
         try {
-            if (inboundProtocol == null) {
-                // deal with spurious calls; the protocol to send isn't known yet.
-                return CLEAN;
+            if (context.isEstablished() && src.remaining() > 0) {
+                byte[] token = new byte[src.remaining()];
+                src.get(token);
+                tokenQueue.offer(context.wrap(token, 0, token.length, new MessageProp(false)));
             }
-
-            if (CLUSTER.equals(inboundProtocol)) {
-                // in case of a member, the cluster protocol needs to be send first before initializing the channel.
-
-                if (!clusterProtocolBuffered) {
-                    clusterProtocolBuffered = true;
-                    dst.put(stringToBytes(CLUSTER));
-                    // Return false because ProtocolEncoder is not ready yet; but first we need to flush protocol
-                    return DIRTY;
-                }
-
-                if (!isProtocolBufferDrained()) {
-                    // Return false because ProtocolEncoder is not ready yet; but first we need to flush protocol
-                    return DIRTY;
-                }
-
-                initChannelForCluster();
-            } else if (CLIENT_BINARY_NEW.equals(inboundProtocol)) {
-                // in case of a client, the member will not send the member protocol
-                initChannelForClient();
+        if (activeToken!=null && dst.hasRemaining()) {
+            int toWrite = Math.min(dst.remaining(), activeToken.length-activeTokenPos);
+            dst.put(activeToken, activeTokenPos, toWrite);
+            activeTokenPos += toWrite;
+            if (activeTokenPos>=activeToken.length) {
+                activeToken = null;
+                activeTokenPos=0;
             } else {
-                // in case of a text-client, the member will not send the member protocol
-                initChannelForText();
+                return DIRTY;
             }
+        }
+        while (dst.remaining()>4 && !tokenQueue.isEmpty()) {
+            activeToken = tokenQueue.poll();
+            if (activeToken!=null) {
+              dst.putInt(activeToken.length);
+              activeTokenPos = 0;
+            }
+            if (activeToken!=null && dst.hasRemaining()) {
+                int toWrite = Math.min(dst.remaining(), activeToken.length-activeTokenPos);
+                dst.put(activeToken, activeTokenPos, toWrite);
+                activeTokenPos += toWrite;
+                if (activeTokenPos>=activeToken.length) {
+                    activeToken = null;
+                    activeTokenPos=0;
+                }
+            }
+        }
+
+        if (!dst.hasRemaining() || (activeToken==null && dst.remaining()<4 && !tokenQueue.isEmpty())) {
+            return DIRTY;
+        }
+        
+//        if (!context.isEstablished()) {
+//            // wait until Decoder provides more messages
+//            return CLEAN;
+//        } 
 
             return CLEAN;
+        } catch (GSSException e) {
+            e.printStackTrace();
+            throw ExceptionUtil.rethrow(e);
         } finally {
             dst.flip();
         }
     }
 
-    /**
-     * Checks if the protocol bytes have been drained.
-     *
-     * The protocol buffer is in write mode, so if position is 0, the protocol
-     * buffer has been drained.
-     *
-     * @return true if the protocol buffer has been drained.
-     */
-    private boolean isProtocolBufferDrained() {
-        return dst.position() == 0;
-    }
-
-    private void initChannelForCluster() {
-        channel.config()
-                .setOption(SO_SNDBUF, props.getInteger(SOCKET_SEND_BUFFER_SIZE) * KILO_BYTE);
-
-        channel.outboundPipeline().remove(this);
-    }
-
-    private void initChannelForClient() {
-        channel.config()
-                .setOption(SO_SNDBUF, clientSndBuf());
-
-        channel.outboundPipeline().replace(this, new ClientMessageEncoder());
-    }
-
-    private void initChannelForText() {
-        channel.config()
-                .setOption(SO_SNDBUF, clientSndBuf());
-
-        TextEncoder encoder = (TextEncoder) channel.attributeMap().remove(TEXT_ENCODER);
-        channel.outboundPipeline().replace(this, encoder);
-    }
-
-    private int clientSndBuf() {
-        int sndBuf = props.getInteger(SOCKET_CLIENT_SEND_BUFFER_SIZE);
-        if (sndBuf == -1) {
-            sndBuf = props.getInteger(SOCKET_SEND_BUFFER_SIZE);
-        }
-        return sndBuf * KILO_BYTE;
-    }
 }

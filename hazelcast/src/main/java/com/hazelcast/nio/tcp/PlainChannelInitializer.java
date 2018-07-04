@@ -21,6 +21,7 @@ import com.hazelcast.internal.networking.ChannelConfig;
 import com.hazelcast.internal.networking.ChannelInitializer;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.spi.properties.HazelcastProperties;
+import com.hazelcast.util.ExceptionUtil;
 
 import static com.hazelcast.internal.networking.ChannelOption.DIRECT_BUF;
 import static com.hazelcast.internal.networking.ChannelOption.SO_KEEPALIVE;
@@ -36,12 +37,31 @@ import static com.hazelcast.spi.properties.GroupProperty.SOCKET_NO_DELAY;
 import static com.hazelcast.spi.properties.GroupProperty.SOCKET_RECEIVE_BUFFER_SIZE;
 import static com.hazelcast.spi.properties.GroupProperty.SOCKET_SEND_BUFFER_SIZE;
 
+import java.security.AccessController;
+
+import javax.security.auth.Subject;
+
+import org.ietf.jgss.GSSContext;
+import org.ietf.jgss.GSSCredential;
+import org.ietf.jgss.GSSException;
+import org.ietf.jgss.GSSManager;
+import org.ietf.jgss.Oid;
+
 /**
  * A {@link ChannelInitializer} that runs on a member and used for unencrypted
  * channels. It will deal with the exchange of protocols and based on that it
  * will set up the appropriate handlers in the pipeline.
  */
 public class PlainChannelInitializer implements ChannelInitializer {
+
+    private final static Oid KRB5_OID;
+    static {
+        try {
+            KRB5_OID = new Oid("1.2.840.113554.1.2.2");
+        } catch (GSSException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private final IOService ioService;
     private final HazelcastProperties props;
@@ -65,11 +85,39 @@ public class PlainChannelInitializer implements ChannelInitializer {
         ProtocolEncoder encoder = new ProtocolEncoder(ioService);
         ProtocolDecoder decoder = new ProtocolDecoder(ioService, encoder);
         
+        GSSManager manager = GSSManager.getInstance();
+        GSSContext gssContext=null;
+        
+//        Subject activeSubject = Subject.getSubject(AccessController.getContext());
+        try {
+        if (channel.isClientMode()) {
+            
+            gssContext = manager.createContext(manager.createName("server1/hzc@JBOSS.ORG", null), KRB5_OID, null, GSSContext.DEFAULT_LIFETIME);
+
+            //            gssContext.requestCredDeleg(true);
+//            gssContext.requestMutualAuth(true);
+//            gssContext.requestConf(true);
+//            gssContext.requestInteg(true);
+        } else {
+            gssContext = manager.createContext((GSSCredential) null);
+        }
+        } catch (GSSException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            ExceptionUtil.rethrow(e);
+        }
+        KerberosEncoder krbEncoder=new KerberosEncoder(gssContext);
+        KerberosDecoder krbDecoder=new KerberosDecoder(gssContext,krbEncoder);
+        
         TcpIpConnection connection = (TcpIpConnection) channel.attributeMap().get(TcpIpConnection.class);
         channel.outboundPipeline().addLast(ioService.createMemberOutboundHandlers(connection));
         
+        channel.outboundPipeline().addLast(krbEncoder);
         channel.outboundPipeline().addLast(encoder);
+        
         channel.inboundPipeline().addLast(decoder);
+        channel.inboundPipeline().addLast(krbDecoder);
+        
 //        channel.inboundPipeline().addLast(ioService.createMemberInboundHandlers(connection));
     }
 }

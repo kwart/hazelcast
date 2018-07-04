@@ -20,6 +20,7 @@ import static com.hazelcast.internal.networking.ChannelOption.DIRECT_BUF;
 import static com.hazelcast.internal.networking.ChannelOption.SO_RCVBUF;
 import static com.hazelcast.internal.networking.ChannelOption.SO_SNDBUF;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
+import static com.hazelcast.internal.networking.HandlerStatus.DIRTY;
 import static com.hazelcast.nio.ConnectionType.MEMBER;
 import static com.hazelcast.nio.IOService.KILO_BYTE;
 import static com.hazelcast.nio.IOUtil.compactOrClear;
@@ -34,8 +35,14 @@ import static com.hazelcast.util.StringUtil.stringToBytes;
 
 import java.nio.ByteBuffer;
 import java.security.AccessController;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.security.auth.Subject;
+
+import org.ietf.jgss.GSSContext;
+import org.ietf.jgss.GSSException;
+import org.ietf.jgss.MessageProp;
 
 import com.hazelcast.client.impl.protocol.util.ClientMessageDecoder;
 import com.hazelcast.internal.networking.ChannelInboundHandler;
@@ -44,6 +51,7 @@ import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.ascii.TextDecoder;
 import com.hazelcast.nio.ascii.TextEncoder;
 import com.hazelcast.spi.properties.HazelcastProperties;
+import com.hazelcast.util.ExceptionUtil;
 
 /**
  * A {@link ChannelInboundHandler} that reads the protocol bytes
@@ -53,21 +61,23 @@ import com.hazelcast.spi.properties.HazelcastProperties;
  * The ProtocolDecoder doesn't forward to the dst; it replaces itself once the
  * protocol bytes are known. So that is why the Void type for dst.
  */
-public class KerberosDecoder extends ChannelInboundHandler<ByteBuffer, Void> {
+public class KerberosDecoder extends ChannelInboundHandler<ByteBuffer, ByteBuffer> {
 
-    private final IOService ioService;
-    private final ProtocolEncoder protocolEncoder;
-    private final HazelcastProperties props;
+    private final KerberosEncoder kerberosEncoder;
+    private final GSSContext context;
+    private byte[] activeToken;
+    private int activeTokenPos;
+    private byte[] toWrite;
+    private int toWritePos;
 
-    public KerberosDecoder(IOService ioService, ProtocolEncoder protocolEncoder) {
-        this.ioService = ioService;
-        this.protocolEncoder = protocolEncoder;
-        this.props = ioService.properties();
+    public KerberosDecoder(GSSContext context, KerberosEncoder protocolEncoder) {
+        this.kerberosEncoder = protocolEncoder;
+        this.context= context;
     }
 
     @Override
     public void handlerAdded() {
-        initSrcBuffer(PROTOCOL_LENGTH);
+        initSrcBuffer(2048);
     }
 
     @Override
@@ -75,86 +85,55 @@ public class KerberosDecoder extends ChannelInboundHandler<ByteBuffer, Void> {
         src.flip();
 
         try {
-            if (src.remaining() < PROTOCOL_LENGTH) {
-                // The protocol has not yet been fully received.
-                return CLEAN;
+            if (dst.hasRemaining() && toWrite!=null) {
+                int min = Math.min(dst.remaining(), toWrite.length-toWritePos);
+                dst.put(toWrite, toWritePos, min);
+                toWritePos+=min;
+                if (toWritePos>=toWrite.length) {
+                     toWritePos = 0;
+                     toWrite=null;
+                } else {
+                    return DIRTY;
+                }
             }
-
-            Subject activeSubject = Subject.getSubject(AccessController.getContext());
-            System.out.println("Subject: " +activeSubject);
-            System.out.println("Principals: " +activeSubject.getPrincipals());
-
-            String protocol = loadProtocol();
-
-            if (CLUSTER.equals(protocol)) {
-                initChannelForCluster();
-            } else if (CLIENT_BINARY_NEW.equals(protocol)) {
-                initChannelForClient();
-            } else {
-                // text doesn't have a protocol; anything that isn't cluster/client protocol will be interpreted as txt.
-                initChannelForText(protocol);
+            
+            if (activeToken==null ) {
+                if (src.remaining()<4) {
+                    // The token length has not yet been fully received.
+                    return CLEAN;
+                }
+                activeToken = new byte[src.getInt()];
+                activeTokenPos = 0;
             }
-
-            if (!channel.isClientMode()) {
-                protocolEncoder.signalProtocolEstablished(protocol);
+            
+            while (src.hasRemaining()) {
+                if (activeTokenPos <activeToken.length) {
+                    int toRead = Math.min(activeToken.length-activeTokenPos, src.remaining());
+                    src.get(activeToken, activeTokenPos, toRead);
+                    activeTokenPos+=toRead;
+                }
+                if (activeTokenPos<activeToken.length) {
+                    return CLEAN;
+                }
+                if (!context.isEstablished() ) {
+                    if (channel.isClientMode()) {
+                        kerberosEncoder.writeToken(context.initSecContext(activeToken, 0, activeToken.length));
+                    } else {
+                        kerberosEncoder.writeToken(context.acceptSecContext(activeToken, 0, activeToken.length));
+                    }
+                } else {
+                    toWrite = context.unwrap(activeToken, 0, activeToken.length, new MessageProp(false));
+                    toWritePos = 0;
+                }
             }
-
             return CLEAN;
+
+        } catch (GSSException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            throw ExceptionUtil.rethrow(e);
         } finally {
             compactOrClear(src);
         }
-    }
-
-    private String loadProtocol() {
-        byte[] protocolBytes = new byte[PROTOCOL_LENGTH];
-        src.get(protocolBytes);
-        return bytesToString(protocolBytes);
-    }
-
-    private void initChannelForCluster() {
-        channel.config()
-                .setOption(SO_SNDBUF, props.getInteger(SOCKET_RECEIVE_BUFFER_SIZE) * KILO_BYTE);
-
-        TcpIpConnection connection = (TcpIpConnection) channel.attributeMap().get(TcpIpConnection.class);
-        connection.setType(MEMBER);
-        channel.inboundPipeline().remove(this);
-        channel.inboundPipeline().addLast(ioService.createMemberInboundHandlers(connection));
-    }
-
-    private void initChannelForClient() {
-        channel.config()
-                .setOption(SO_RCVBUF, KILO_BYTE * clientRcvBuf())
-                // clients dont support direct buffers
-                .setOption(DIRECT_BUF, false);
-
-        TcpIpConnection connection = (TcpIpConnection) channel.attributeMap().get(TcpIpConnection.class);
-        channel.inboundPipeline().replace(this, new ClientMessageDecoder(connection, ioService.getClientEngine()));
-    }
-
-    private void initChannelForText(String protocol) {
-        channel.config()
-                .setOption(SO_RCVBUF, clientRcvBuf());
-
-        TcpIpConnection connection = (TcpIpConnection) channel.attributeMap().get(TcpIpConnection.class);
-        connection.getConnectionManager().incrementTextConnections();
-
-        TextEncoder encoder = new TextEncoder(connection);
-
-        channel.attributeMap().put(TextEncoder.TEXT_ENCODER, encoder);
-
-        TextDecoder decoder = new TextDecoder(connection, encoder);
-        decoder.src(newByteBuffer(channel.config().getOption(SO_RCVBUF), channel.config().getOption(DIRECT_BUF)));
-        // we need to restore whatever is read
-        decoder.src().put(stringToBytes(protocol));
-
-        channel.inboundPipeline().replace(this, decoder);
-    }
-
-    private int clientRcvBuf() {
-        int rcvBuf = props.getInteger(SOCKET_CLIENT_RECEIVE_BUFFER_SIZE);
-        if (rcvBuf == -1) {
-            rcvBuf = props.getInteger(SOCKET_RECEIVE_BUFFER_SIZE);
-        }
-        return rcvBuf;
     }
 }
