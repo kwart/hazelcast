@@ -48,9 +48,8 @@ import org.ietf.jgss.GSSManager;
 import org.ietf.jgss.Oid;
 
 /**
- * A {@link ChannelInitializer} that runs on a member and used for unencrypted
- * channels. It will deal with the exchange of protocols and based on that it
- * will set up the appropriate handlers in the pipeline.
+ * A {@link ChannelInitializer} that runs on a member and used for unencrypted channels. It will deal with the exchange of
+ * protocols and based on that it will set up the appropriate handlers in the pipeline.
  */
 public class PlainChannelInitializer implements ChannelInitializer {
 
@@ -73,6 +72,7 @@ public class PlainChannelInitializer implements ChannelInitializer {
 
     @Override
     public void initChannel(Channel channel) {
+        System.out.println("isClient? "+ channel.isClientMode());
         ChannelConfig config = channel.config();
         config.setOption(DIRECT_BUF, props.getBoolean(SOCKET_BUFFER_DIRECT))
                 .setOption(TCP_NODELAY, props.getBoolean(SOCKET_NO_DELAY))
@@ -82,42 +82,45 @@ public class PlainChannelInitializer implements ChannelInitializer {
                 .setOption(SO_RCVBUF, props.getInteger(SOCKET_RECEIVE_BUFFER_SIZE) * KILO_BYTE)
                 .setOption(SO_LINGER, props.getSeconds(SOCKET_LINGER_SECONDS));
 
-        ProtocolEncoder encoder = new ProtocolEncoder(ioService);
-        ProtocolDecoder decoder = new ProtocolDecoder(ioService, encoder);
-        
         GSSManager manager = GSSManager.getInstance();
-        GSSContext gssContext=null;
-        
-//        Subject activeSubject = Subject.getSubject(AccessController.getContext());
-        try {
-        if (channel.isClientMode()) {
-            
-            gssContext = manager.createContext(manager.createName("server1/hzc@JBOSS.ORG", null), KRB5_OID, null, GSSContext.DEFAULT_LIFETIME);
+        GSSContext gssContext = null;
 
-            //            gssContext.requestCredDeleg(true);
-//            gssContext.requestMutualAuth(true);
-//            gssContext.requestConf(true);
-//            gssContext.requestInteg(true);
-        } else {
-            gssContext = manager.createContext((GSSCredential) null);
-        }
+         Subject activeSubject = Subject.getSubject(AccessController.getContext());
+         String name = activeSubject.getPrincipals().toString().indexOf("server1")>=0?"server2":"server1";
+        try {
+            if (channel.isClientMode()) {
+                // gssContext = manager.createContext(manager.createName("localhost/hzc", null), KRB5_OID, null,
+                // GSSContext.DEFAULT_LIFETIME);
+                gssContext = manager.createContext(manager.createName(name+"/hzc", null), KRB5_OID, null,
+                        GSSContext.DEFAULT_LIFETIME);
+
+                // gssContext.requestCredDeleg(true);
+                // gssContext.requestMutualAuth(true);
+                // gssContext.requestConf(true);
+                // gssContext.requestInteg(true);
+            } else {
+                gssContext = manager.createContext((GSSCredential) null);
+            }
         } catch (GSSException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
             ExceptionUtil.rethrow(e);
         }
-        KerberosEncoder krbEncoder=new KerberosEncoder(gssContext);
-        KerberosDecoder krbDecoder=new KerberosDecoder(gssContext,krbEncoder);
-        
+        KerberosEncoder krbEncoder = new KerberosEncoder(gssContext);
+        KerberosDecoder krbDecoder = new KerberosDecoder(gssContext, krbEncoder);
+
         TcpIpConnection connection = (TcpIpConnection) channel.attributeMap().get(TcpIpConnection.class);
         channel.outboundPipeline().addLast(ioService.createMemberOutboundHandlers(connection));
-        
+
+        ProtocolEncoder encoder = new ProtocolEncoder(ioService);
+        ProtocolDecoder decoder = new ProtocolDecoder(ioService, encoder);
+
         channel.outboundPipeline().addLast(krbEncoder);
         channel.outboundPipeline().addLast(encoder);
-        
+
         channel.inboundPipeline().addLast(decoder);
         channel.inboundPipeline().addLast(krbDecoder);
-        
-//        channel.inboundPipeline().addLast(ioService.createMemberInboundHandlers(connection));
+
+        // channel.inboundPipeline().addLast(ioService.createMemberInboundHandlers(connection));
     }
 }

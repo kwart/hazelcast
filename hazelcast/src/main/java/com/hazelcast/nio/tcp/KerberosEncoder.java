@@ -21,6 +21,7 @@ import static com.hazelcast.internal.networking.HandlerStatus.DIRTY;
 import static com.hazelcast.nio.IOUtil.compactOrClear;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -59,8 +60,11 @@ public class KerberosEncoder extends ChannelOutboundHandler<ByteBuffer, ByteBuff
 
         if (channel.isClientMode() && !context.isEstablished()) {
             try {
-                tokenQueue.offer(context.initSecContext(new byte[0], 0, 0));
+                System.out.println("init sec context");
+                byte[] initSecContext = context.initSecContext(new byte[0], 0, 0);
+                tokenQueue.offer(initSecContext);
             } catch (GSSException e) {
+                e.printStackTrace();
                 ExceptionUtil.rethrow(e);
             }
         }
@@ -80,6 +84,7 @@ public class KerberosEncoder extends ChannelOutboundHandler<ByteBuffer, ByteBuff
             if (context.isEstablished() && src.remaining() > 0) {
                 byte[] token = new byte[src.remaining()];
                 src.get(token);
+                System.out.println("wrap");
                 tokenQueue.offer(context.wrap(token, 0, token.length, new MessageProp(false)));
             }
         if (activeToken!=null && dst.hasRemaining()) {
@@ -87,6 +92,7 @@ public class KerberosEncoder extends ChannelOutboundHandler<ByteBuffer, ByteBuff
             dst.put(activeToken, activeTokenPos, toWrite);
             activeTokenPos += toWrite;
             if (activeTokenPos>=activeToken.length) {
+                System.out.println("Written token " + Arrays.toString(activeToken));
                 activeToken = null;
                 activeTokenPos=0;
             } else {
@@ -104,6 +110,7 @@ public class KerberosEncoder extends ChannelOutboundHandler<ByteBuffer, ByteBuff
                 dst.put(activeToken, activeTokenPos, toWrite);
                 activeTokenPos += toWrite;
                 if (activeTokenPos>=activeToken.length) {
+                    System.out.println(Thread.currentThread().getName() + " Written token " + Arrays.toString(activeToken));
                     activeToken = null;
                     activeTokenPos=0;
                 }

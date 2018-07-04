@@ -47,7 +47,7 @@ import static com.hazelcast.util.StringUtil.stringToBytes;
  * of the connection will wait till it has received the protocol and then will only
  * send the protocol if the client side was a member.
  */
-public class ProtocolEncoder extends ChannelOutboundHandler<Void, ByteBuffer> {
+public class ProtocolEncoder extends ChannelOutboundHandler<ByteBuffer, ByteBuffer> {
 
     private final IOService ioService;
     private final HazelcastProperties props;

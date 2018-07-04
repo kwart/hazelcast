@@ -53,7 +53,7 @@ import com.hazelcast.spi.properties.HazelcastProperties;
  * The ProtocolDecoder doesn't forward to the dst; it replaces itself once the
  * protocol bytes are known. So that is why the Void type for dst.
  */
-public class ProtocolDecoder extends ChannelInboundHandler<ByteBuffer, Void> {
+public class ProtocolDecoder extends ChannelInboundHandler<ByteBuffer, ByteBuffer> {
 
     private final IOService ioService;
     private final ProtocolEncoder protocolEncoder;

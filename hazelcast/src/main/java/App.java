@@ -22,7 +22,7 @@ public class App {
         networkConfig.getJoin().getTcpIpConfig().setEnabled(true).addMember("127.0.0.1");
         try {
             Hazelcast.newHazelcastInstance(config);
-//            config.setProperty(GroupProperty.KERBEROS_SERVERNAME.getName(), "server2");
+            config.setProperty(GroupProperty.KERBEROS_SERVERNAME.getName(), "server2");
             Hazelcast.newHazelcastInstance(config);
         } finally {
             HazelcastInstanceFactory.terminateAll();

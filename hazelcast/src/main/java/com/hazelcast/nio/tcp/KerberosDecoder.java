@@ -16,50 +16,27 @@
 
 package com.hazelcast.nio.tcp;
 
-import static com.hazelcast.internal.networking.ChannelOption.DIRECT_BUF;
-import static com.hazelcast.internal.networking.ChannelOption.SO_RCVBUF;
-import static com.hazelcast.internal.networking.ChannelOption.SO_SNDBUF;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
 import static com.hazelcast.internal.networking.HandlerStatus.DIRTY;
-import static com.hazelcast.nio.ConnectionType.MEMBER;
-import static com.hazelcast.nio.IOService.KILO_BYTE;
 import static com.hazelcast.nio.IOUtil.compactOrClear;
-import static com.hazelcast.nio.IOUtil.newByteBuffer;
-import static com.hazelcast.nio.Protocols.CLIENT_BINARY_NEW;
-import static com.hazelcast.nio.Protocols.CLUSTER;
-import static com.hazelcast.nio.Protocols.PROTOCOL_LENGTH;
-import static com.hazelcast.spi.properties.GroupProperty.SOCKET_CLIENT_RECEIVE_BUFFER_SIZE;
-import static com.hazelcast.spi.properties.GroupProperty.SOCKET_RECEIVE_BUFFER_SIZE;
-import static com.hazelcast.util.StringUtil.bytesToString;
-import static com.hazelcast.util.StringUtil.stringToBytes;
 
 import java.nio.ByteBuffer;
-import java.security.AccessController;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-import javax.security.auth.Subject;
+import java.util.Arrays;
 
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSException;
 import org.ietf.jgss.MessageProp;
 
-import com.hazelcast.client.impl.protocol.util.ClientMessageDecoder;
 import com.hazelcast.internal.networking.ChannelInboundHandler;
 import com.hazelcast.internal.networking.HandlerStatus;
-import com.hazelcast.nio.IOService;
-import com.hazelcast.nio.ascii.TextDecoder;
-import com.hazelcast.nio.ascii.TextEncoder;
-import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.util.ExceptionUtil;
 
 /**
- * A {@link ChannelInboundHandler} that reads the protocol bytes
- * {@link com.hazelcast.nio.Protocols} and based on the protocol it creates the
- * appropriate handlers.
+ * A {@link ChannelInboundHandler} that reads the protocol bytes {@link com.hazelcast.nio.Protocols} and based on the protocol
+ * it creates the appropriate handlers.
  *
- * The ProtocolDecoder doesn't forward to the dst; it replaces itself once the
- * protocol bytes are known. So that is why the Void type for dst.
+ * The ProtocolDecoder doesn't forward to the dst; it replaces itself once the protocol bytes are known. So that is why the Void
+ * type for dst.
  */
 public class KerberosDecoder extends ChannelInboundHandler<ByteBuffer, ByteBuffer> {
 
@@ -72,7 +49,7 @@ public class KerberosDecoder extends ChannelInboundHandler<ByteBuffer, ByteBuffe
 
     public KerberosDecoder(GSSContext context, KerberosEncoder protocolEncoder) {
         this.kerberosEncoder = protocolEncoder;
-        this.context= context;
+        this.context = context;
     }
 
     @Override
@@ -85,46 +62,79 @@ public class KerberosDecoder extends ChannelInboundHandler<ByteBuffer, ByteBuffe
         src.flip();
 
         try {
-            if (dst.hasRemaining() && toWrite!=null) {
-                int min = Math.min(dst.remaining(), toWrite.length-toWritePos);
+            System.out.println(Thread.currentThread().getName() + " onRead 1");
+            if (dst != null && dst.hasRemaining() && toWrite != null) {
+                System.out.println("decoder send data");
+                int min = Math.min(dst.remaining(), toWrite.length - toWritePos);
                 dst.put(toWrite, toWritePos, min);
-                toWritePos+=min;
-                if (toWritePos>=toWrite.length) {
-                     toWritePos = 0;
-                     toWrite=null;
+                toWritePos += min;
+                if (toWritePos >= toWrite.length) {
+                    toWritePos = 0;
+                    toWrite = null;
                 } else {
                     return DIRTY;
                 }
             }
-            
-            if (activeToken==null ) {
-                if (src.remaining()<4) {
+            System.out.println(Thread.currentThread().getName() + " onRead 2");
+            if (activeToken == null) {
+                if (src.remaining() < 4) {
                     // The token length has not yet been fully received.
                     return CLEAN;
                 }
                 activeToken = new byte[src.getInt()];
                 activeTokenPos = 0;
             }
-            
-            while (src.hasRemaining()) {
-                if (activeTokenPos <activeToken.length) {
-                    int toRead = Math.min(activeToken.length-activeTokenPos, src.remaining());
-                    src.get(activeToken, activeTokenPos, toRead);
-                    activeTokenPos+=toRead;
-                }
-                if (activeTokenPos<activeToken.length) {
-                    return CLEAN;
-                }
-                if (!context.isEstablished() ) {
-                    if (channel.isClientMode()) {
-                        kerberosEncoder.writeToken(context.initSecContext(activeToken, 0, activeToken.length));
+            System.out.println(Thread.currentThread().getName() + " onRead 3");
+
+            if (activeTokenPos < activeToken.length) {
+                int toRead = Math.min(activeToken.length - activeTokenPos, src.remaining());
+                src.get(activeToken, activeTokenPos, toRead);
+                activeTokenPos += toRead;
+            }
+            if (activeTokenPos < activeToken.length) {
+                return CLEAN;
+            }
+            System.out.println(Thread.currentThread().getName() + " Readen token " + Arrays.toString(activeToken));
+
+            if (!context.isEstablished()) {
+                if (channel.isClientMode()) {
+                    System.out.println("init sec context ");
+                    byte[] initSecContext = context.initSecContext(activeToken, 0, activeToken.length);
+                    activeToken = null;
+                    activeTokenPos = 0;
+                    if (initSecContext != null) {
+                        kerberosEncoder.writeToken(initSecContext);
                     } else {
-                        kerberosEncoder.writeToken(context.acceptSecContext(activeToken, 0, activeToken.length));
+                        channel.outboundPipeline().wakeup();
+                        System.out.println("init sec context was null");
+                        return CLEAN;
                     }
                 } else {
-                    toWrite = context.unwrap(activeToken, 0, activeToken.length, new MessageProp(false));
-                    toWritePos = 0;
+                    System.out.println("accept sec context");
+                    byte[] acceptSecContext = context.acceptSecContext(activeToken, 0, activeToken.length);
+                    activeToken = null;
+                    activeTokenPos = 0;
+                    if (acceptSecContext != null) {
+                        kerberosEncoder.writeToken(acceptSecContext);
+                    } else {
+                        channel.outboundPipeline().wakeup();
+                        System.out.println("accept sec context was null");
+                        return CLEAN;
+                    }
                 }
+            } else {
+                System.out.println("unwrap");
+                toWrite = context.unwrap(activeToken, 0, activeToken.length, new MessageProp(false));
+                toWritePos = 0;
+                activeToken = null;
+                activeTokenPos = 0;
+                return DIRTY;
+            }
+            activeToken = null;
+            activeTokenPos = 0;
+
+            if (src.hasRemaining()) {
+                return DIRTY;
             }
             return CLEAN;
 
@@ -134,6 +144,7 @@ public class KerberosDecoder extends ChannelInboundHandler<ByteBuffer, ByteBuffe
             throw ExceptionUtil.rethrow(e);
         } finally {
             compactOrClear(src);
+            System.out.println("onRead finally");
         }
     }
 }
