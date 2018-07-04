@@ -64,8 +64,12 @@ public class PlainChannelInitializer implements ChannelInitializer {
 
         ProtocolEncoder encoder = new ProtocolEncoder(ioService);
         ProtocolDecoder decoder = new ProtocolDecoder(ioService, encoder);
-
+        
+        TcpIpConnection connection = (TcpIpConnection) channel.attributeMap().get(TcpIpConnection.class);
+        channel.outboundPipeline().addLast(ioService.createMemberOutboundHandlers(connection));
+        
         channel.outboundPipeline().addLast(encoder);
         channel.inboundPipeline().addLast(decoder);
+//        channel.inboundPipeline().addLast(ioService.createMemberInboundHandlers(connection));
     }
 }

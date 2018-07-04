@@ -47,14 +47,14 @@ import static com.hazelcast.util.StringUtil.stringToBytes;
  * of the connection will wait till it has received the protocol and then will only
  * send the protocol if the client side was a member.
  */
-public class ProtocolEncoder extends ChannelOutboundHandler<Void, ByteBuffer> {
+public class KerberosEncoder extends ChannelOutboundHandler<Void, ByteBuffer> {
 
     private final IOService ioService;
     private final HazelcastProperties props;
     private volatile String inboundProtocol;
     private boolean clusterProtocolBuffered;
 
-    public ProtocolEncoder(IOService ioService) {
+    public KerberosEncoder(IOService ioService) {
         this.ioService = ioService;
         this.props = ioService.properties();
     }
