@@ -170,10 +170,10 @@ public final class HazelcastInstanceFactory {
                 lc.login();
                 System.out.println("Kerberos Authentication succeed");
                 // 2. Perform the work as authenticated Subject.
-                return Subject.doAs(lc.getSubject(), new PrivilegedExceptionAction() {
+                return Subject.doAs(lc.getSubject(), new PrivilegedExceptionAction<HazelcastInstance>() {
 
                     @Override
-                    public Object run() throws Exception {
+                    public HazelcastInstance run() throws Exception {
                         return newHazelcastInstance(
                                 config,
                                 config.getInstanceName(),
