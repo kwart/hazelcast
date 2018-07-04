@@ -24,17 +24,33 @@ import com.hazelcast.core.Member;
 import com.hazelcast.internal.jmx.ManagementService;
 import com.hazelcast.spi.annotation.PrivateApi;
 import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.util.ExceptionUtil;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
+import javax.security.auth.login.LoginContext;
+
+import org.ietf.jgss.GSSException;
+import org.ietf.jgss.Oid;
 
 import static com.hazelcast.core.LifecycleEvent.LifecycleState.STARTED;
 import static com.hazelcast.util.EmptyStatement.ignore;
@@ -43,6 +59,8 @@ import static com.hazelcast.util.SetUtil.createHashSet;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
+import java.security.PrivilegedExceptionAction;
 
 /**
  * Central manager for all Hazelcast members of the JVM.
@@ -110,23 +128,69 @@ public final class HazelcastInstanceFactory {
         }
     }
 
+    private final static Oid KRB5_OID;
+    static {
+        try {
+            KRB5_OID = new Oid("1.2.840.113554.1.2.2");
+        } catch (GSSException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    
     /**
      * Creates a new Hazelcast instance.
      *
-     * @param config the configuration to use; if <code>null</code>, the set of defaults
+     * @param aConfig the configuration to use; if <code>null</code>, the set of defaults
      *               as specified in the XSD for the configuration XML will be used.
      * @return the configured {@link HazelcastInstance}
      */
-    public static HazelcastInstance newHazelcastInstance(Config config) {
-        if (config == null) {
-            config = new XmlConfigBuilder().build();
+    public static HazelcastInstance newHazelcastInstance(Config aConfig) {
+        if (aConfig == null) {
+            aConfig = new XmlConfigBuilder().build();
         }
 
-        return newHazelcastInstance(
-                config,
-                config.getInstanceName(),
-                new DefaultNodeContext()
-        );
+        final Config config= aConfig;
+        HazelcastProperties hzProps = new HazelcastProperties(config.getProperties());
+        if (hzProps.getBoolean(GroupProperty.KERBEROS_ENABLED)) {
+            Configuration.setConfiguration(new Configuration() {
+                @Override
+                public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+                    final Map<String, Object> options = new HashMap<String, Object>();
+                    options.put("refreshKrb5Config", "true");
+                    options.put("storeKey", "true");
+                    return new AppConfigurationEntry[] { new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule",
+                            AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, options) };
+                }
+            });
+            try {
+                // 1. Authenticate to Kerberos.
+                final LoginContext lc = new LoginContext("foo", new UsernamePasswordHandler(hzProps.getString(GroupProperty.KERBEROS_SERVERNAME)+
+                        "/hzc@JBOSS.ORG", "gsstestpwd".toCharArray()));
+                lc.login();
+                System.out.println("Kerberos Authentication succeed");
+                // 2. Perform the work as authenticated Subject.
+                return Subject.doAs(lc.getSubject(), new PrivilegedExceptionAction() {
+
+                    @Override
+                    public Object run() throws Exception {
+                        return newHazelcastInstance(
+                                config,
+                                config.getInstanceName(),
+                                new DefaultNodeContext()
+                                );
+                    }
+                });
+            } catch (Exception e) {
+                throw ExceptionUtil.rethrow(e);
+            }
+        } else {
+            return newHazelcastInstance(
+                    config,
+                    config.getInstanceName(),
+                    new DefaultNodeContext()
+                    );
+        }
     }
 
     public static String createInstanceName(Config config) {
@@ -351,6 +415,41 @@ public final class HazelcastInstanceFactory {
 
         boolean isSet() {
             return hz != null;
+        }
+    }
+    
+    private static class UsernamePasswordHandler implements CallbackHandler {
+        private transient String username;
+        private transient char[] password;
+
+        /**
+         * Initialize the UsernamePasswordHandler with the username and password to use.
+         */
+        public UsernamePasswordHandler(String username, char[] password) {
+            this.username = username;
+            this.password = password;
+        }
+
+        /**
+         * Sets any NameCallback name property to the instance username, sets any PasswordCallback password property to the
+         * instance, and any password.
+         * 
+         * @exception UnsupportedCallbackException, thrown if any callback of type other than NameCallback or PasswordCallback are
+         *            seen.
+         */
+        public void handle(Callback[] callbacks) throws UnsupportedCallbackException {
+            for (int i = 0; i < callbacks.length; i++) {
+                Callback c = callbacks[i];
+                if (c instanceof NameCallback) {
+                    final NameCallback nc = (NameCallback) c;
+                    nc.setName(username);
+                } else if (c instanceof PasswordCallback) {
+                    final PasswordCallback pc = (PasswordCallback) c;
+                    pc.setPassword(password);
+                } else {
+                    throw new UnsupportedCallbackException(c);
+                }
+            }
         }
     }
 }

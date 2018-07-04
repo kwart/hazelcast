@@ -16,16 +16,6 @@
 
 package com.hazelcast.nio.tcp;
 
-import com.hazelcast.client.impl.protocol.util.ClientMessageDecoder;
-import com.hazelcast.internal.networking.ChannelInboundHandler;
-import com.hazelcast.internal.networking.HandlerStatus;
-import com.hazelcast.nio.IOService;
-import com.hazelcast.nio.ascii.TextDecoder;
-import com.hazelcast.nio.ascii.TextEncoder;
-import com.hazelcast.spi.properties.HazelcastProperties;
-
-import java.nio.ByteBuffer;
-
 import static com.hazelcast.internal.networking.ChannelOption.DIRECT_BUF;
 import static com.hazelcast.internal.networking.ChannelOption.SO_RCVBUF;
 import static com.hazelcast.internal.networking.ChannelOption.SO_SNDBUF;
@@ -41,6 +31,19 @@ import static com.hazelcast.spi.properties.GroupProperty.SOCKET_CLIENT_RECEIVE_B
 import static com.hazelcast.spi.properties.GroupProperty.SOCKET_RECEIVE_BUFFER_SIZE;
 import static com.hazelcast.util.StringUtil.bytesToString;
 import static com.hazelcast.util.StringUtil.stringToBytes;
+
+import java.nio.ByteBuffer;
+import java.security.AccessController;
+
+import javax.security.auth.Subject;
+
+import com.hazelcast.client.impl.protocol.util.ClientMessageDecoder;
+import com.hazelcast.internal.networking.ChannelInboundHandler;
+import com.hazelcast.internal.networking.HandlerStatus;
+import com.hazelcast.nio.IOService;
+import com.hazelcast.nio.ascii.TextDecoder;
+import com.hazelcast.nio.ascii.TextEncoder;
+import com.hazelcast.spi.properties.HazelcastProperties;
 
 /**
  * A {@link ChannelInboundHandler} that reads the protocol bytes
@@ -76,6 +79,10 @@ public class ProtocolDecoder extends ChannelInboundHandler<ByteBuffer, Void> {
                 // The protocol has not yet been fully received.
                 return CLEAN;
             }
+
+            Subject activeSubject = Subject.getSubject(AccessController.getContext());
+            System.out.println("Subject: " +activeSubject);
+            System.out.println("Principals: " +activeSubject.getPrincipals());
 
             String protocol = loadProtocol();
 

@@ -39,6 +39,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 @SuppressWarnings("checkstyle:javadocvariable")
 public final class GroupProperty {
 
+    public static final HazelcastProperty KERBEROS_ENABLED = new HazelcastProperty("hazelcast.kerberos.enabled", false);
+    public static final HazelcastProperty KERBEROS_SERVERNAME = new HazelcastProperty("hazelcast.kerberos.servername", "server1");
+
     /**
      * Use this property to verify that Hazelcast nodes only join the cluster when their 'application' level configuration is the
      * same.
