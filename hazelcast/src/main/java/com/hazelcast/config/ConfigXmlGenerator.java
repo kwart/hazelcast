@@ -159,6 +159,7 @@ public class ConfigXmlGenerator {
         crdtReplicationXmlGenerator(gen, config);
         pnCounterXmlGenerator(gen, config);
         quorumXmlGenerator(gen, config);
+        restApiXmlGenerator(gen, config);
 
         xml.append("</hazelcast>");
 
@@ -1375,6 +1376,18 @@ public class ConfigXmlGenerator {
 
     private static void liteMemberXmlGenerator(XmlGenerator gen, Config config) {
         gen.node("lite-member", null, "enabled", config.isLiteMember());
+    }
+
+    private static void restApiXmlGenerator(XmlGenerator gen, Config config) {
+        RestApiConfig c = config.getRestApiConfig();
+        if (c == null) {
+            return;
+        }
+        gen.open("rest-api", "enabled", c.isEnabled());
+        for (RestEndpointGroup group : RestEndpointGroup.values()) {
+            gen.node("endpoint-group", null, "name", group.name(), "enabled", c.isGroupEnabled(group));
+        }
+        gen.close();
     }
 
     private String format(String input, int indent) {

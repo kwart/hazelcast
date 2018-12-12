@@ -27,7 +27,6 @@ import com.hazelcast.internal.ascii.memcache.SetCommandParser;
 import com.hazelcast.internal.ascii.memcache.SimpleCommandParser;
 import com.hazelcast.internal.ascii.memcache.TouchCommandParser;
 import com.hazelcast.internal.ascii.rest.HttpCommand;
-import com.hazelcast.internal.ascii.rest.HttpCommandProcessor;
 import com.hazelcast.internal.ascii.rest.HttpDeleteCommandParser;
 import com.hazelcast.internal.ascii.rest.HttpGetCommandParser;
 import com.hazelcast.internal.ascii.rest.HttpHeadCommandParser;
@@ -39,7 +38,6 @@ import com.hazelcast.nio.ConnectionType;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.spi.annotation.PrivateApi;
-import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.util.StringUtil;
 
 import java.io.IOException;
@@ -62,14 +60,11 @@ import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.
 import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.VERSION;
 import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
 import static com.hazelcast.nio.IOUtil.compactOrClear;
-import static com.hazelcast.spi.properties.GroupProperty.HTTP_HEALTHCHECK_ENABLED;
-import static com.hazelcast.spi.properties.GroupProperty.MEMCACHE_ENABLED;
-import static com.hazelcast.spi.properties.GroupProperty.REST_ENABLED;
 
 @PrivateApi
 public class TextDecoder extends InboundHandler<ByteBuffer, Void> {
 
-    private static final Map<String, CommandParser> MAP_COMMAND_PARSERS = new HashMap<String, CommandParser>();
+    static final Map<String, CommandParser> MAP_COMMAND_PARSERS = new HashMap<String, CommandParser>();
 
     @SuppressWarnings("checkstyle:magicnumber")
     private static final int INITIAL_CAPACITY = 1 << 8;
@@ -103,28 +98,20 @@ public class TextDecoder extends InboundHandler<ByteBuffer, Void> {
     private ByteBuffer commandLineBuffer = ByteBuffer.allocate(INITIAL_CAPACITY);
     private boolean commandLineRead;
     private TextCommand command;
-    private final boolean sslEnabled;
     private final TextCommandService textCommandService;
     private final TextEncoder encoder;
     private final TcpIpConnection connection;
-    private final boolean restEnabled;
-    private final boolean memcacheEnabled;
-    private final boolean healthcheckEnabled;
     private boolean connectionTypeSet;
     private long requestIdGen;
+    private final TextProtocolsFilter textProtocolFilter;
     private final ILogger logger;
 
     public TextDecoder(TcpIpConnection connection, TextEncoder encoder) {
         IOService ioService = connection.getConnectionManager().getIoService();
-        this.sslEnabled = ioService.getSSLConfig() == null ? false : ioService.getSSLConfig().isEnabled();
         this.textCommandService = ioService.getTextCommandService();
         this.encoder = encoder;
         this.connection = connection;
-        HazelcastProperties props = ioService.properties();
-
-        this.memcacheEnabled = props.getBoolean(MEMCACHE_ENABLED);
-        this.restEnabled = props.getBoolean(REST_ENABLED);
-        this.healthcheckEnabled = props.getBoolean(HTTP_HEALTHCHECK_ENABLED);
+        this.textProtocolFilter = new TextProtocolsFilter(ioService.getRestApiConfig());
         this.logger = ioService.getLoggingService().getLogger(getClass());
     }
 
@@ -158,7 +145,14 @@ public class TextDecoder extends InboundHandler<ByteBuffer, Void> {
         }
         if (commandLineRead) {
             if (command == null) {
-                processCmd(toStringAndClear(commandLineBuffer));
+                String commandLine = toStringAndClear(commandLineBuffer);
+                // evaluate the command immediately - close connection if command is unknown or not enabled
+                textProtocolFilter.filterConnection(commandLine, connection);
+                if (!connection.isAlive()) {
+                    reset();
+                    return;
+                }
+                processCmd(commandLine);
             }
             if (command != null) {
                 boolean complete = command.readFrom(bb);
@@ -227,23 +221,8 @@ public class TextDecoder extends InboundHandler<ByteBuffer, Void> {
     private boolean isCommandTypeEnabled(TextCommand command) {
         if (!connectionTypeSet) {
             if (command instanceof HttpCommand) {
-                String uri = ((HttpCommand) command).getURI();
-                boolean isMancenterRequest = uri.startsWith(HttpCommandProcessor.URI_MANCENTER_CHANGE_URL);
-                boolean isClusterManagementRequest = uri.startsWith(HttpCommandProcessor.URI_CLUSTER_MANAGEMENT_BASE_URL);
-                boolean isHealthCheck = healthcheckEnabled && uri.startsWith(HttpCommandProcessor.URI_HEALTH_URL);
-                boolean forceRequestHandling = isClusterManagementRequest || isMancenterRequest || isHealthCheck;
-                if (!restEnabled && !forceRequestHandling) {
-                    String msg = sslEnabled ? "REST not enabled" : "REST or SSL not enabled";
-                    connection.close(msg, null);
-                    return false;
-                }
                 connection.setType(ConnectionType.REST_CLIENT);
             } else {
-                if (!memcacheEnabled) {
-                    String msg = sslEnabled ? "Memcached not enabled" : "Memcached or SSL not enabled";
-                    connection.close(msg, null);
-                    return false;
-                }
                 connection.setType(ConnectionType.MEMCACHE_CLIENT);
             }
             connectionTypeSet = true;

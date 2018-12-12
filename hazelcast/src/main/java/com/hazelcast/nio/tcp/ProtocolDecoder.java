@@ -17,6 +17,7 @@
 package com.hazelcast.nio.tcp;
 
 import com.hazelcast.client.impl.protocol.util.ClientMessageDecoder;
+import com.hazelcast.config.RestApiConfig;
 import com.hazelcast.internal.networking.ChannelOptions;
 import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.HandlerStatus;
@@ -69,7 +70,7 @@ public class ProtocolDecoder extends InboundHandler<ByteBuffer, Void> {
     }
 
     @Override
-    public HandlerStatus onRead() {
+    public HandlerStatus onRead() throws Exception {
         src.flip();
 
         try {
@@ -85,6 +86,10 @@ public class ProtocolDecoder extends InboundHandler<ByteBuffer, Void> {
             } else if (CLIENT_BINARY_NEW.equals(protocol)) {
                 initChannelForClient();
             } else {
+                RestApiConfig restApiConfig = ioService.getRestApiConfig();
+                if (! restApiConfig.isEnabledAndNotEmpty()) {
+                    throw new IllegalStateException("Text protocols are not enabled.");
+                }
                 // text doesn't have a protocol; anything that isn't cluster/client protocol will be interpreted as txt.
                 initChannelForText(protocol);
             }
@@ -102,6 +107,10 @@ public class ProtocolDecoder extends InboundHandler<ByteBuffer, Void> {
     private String loadProtocol() {
         byte[] protocolBytes = new byte[PROTOCOL_LENGTH];
         src.get(protocolBytes);
+        if (isTlsHandshake(protocolBytes)) {
+            // fail-fast
+            throw new IllegalStateException("TLS handshake header detected, but plain protocol header was expected.");
+        }
         return bytesToString(protocolBytes);
     }
 
@@ -151,4 +160,16 @@ public class ProtocolDecoder extends InboundHandler<ByteBuffer, Void> {
         }
         return rcvBuf * KILO_BYTE;
     }
+
+    // SSLv3 https://tools.ietf.org/html/rfc6101#section-5.2
+    // TLSv1.0 https://tools.ietf.org/html/rfc2246
+    // TLSv1.1 https://tools.ietf.org/html/rfc4346#section-6.2
+    // TLSv1.2 https://tools.ietf.org/html/rfc5246#section-6.2
+    // TLSv1.3 https://tools.ietf.org/html/rfc8446#section-5.1
+    // Tested TLS Protocol bytes: 22 (handshake type), 3 (protocolVersion.major), 0-3 (ProtocolVersion.minor)
+    @SuppressWarnings("checkstyle:magicnumber")
+    private static boolean isTlsHandshake(byte[] protocolBytes) {
+        return protocolBytes[0] == 22 && protocolBytes[1] == 3 && protocolBytes[2] >= 0 && protocolBytes[2] <= 3;
+    }
+
 }

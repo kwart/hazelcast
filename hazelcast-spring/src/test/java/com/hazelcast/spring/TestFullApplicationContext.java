@@ -76,6 +76,8 @@ import com.hazelcast.config.QueueStoreConfig;
 import com.hazelcast.config.QuorumConfig;
 import com.hazelcast.config.ReliableTopicConfig;
 import com.hazelcast.config.ReplicatedMapConfig;
+import com.hazelcast.config.RestApiConfig;
+import com.hazelcast.config.RestEndpointGroup;
 import com.hazelcast.config.RingbufferConfig;
 import com.hazelcast.config.RingbufferStoreConfig;
 import com.hazelcast.config.SSLConfig;
@@ -1417,5 +1419,16 @@ public class TestFullApplicationContext extends HazelcastTestSupport {
         assertEquals(2, whitelist.getPackages().size());
         assertTrue(whitelist.getPackages().contains("com.acme.app"));
         assertTrue(whitelist.getPackages().contains("com.acme.app.subpkg"));
+    }
+
+    @Test
+    public void testRestApiConfig() {
+        RestApiConfig restApiConfig = config.getRestApiConfig();
+        assertNotNull(restApiConfig);
+        assertFalse(restApiConfig.isEnabled());
+        for (RestEndpointGroup group : RestEndpointGroup.values()) {
+            assertEquals("Unexpected status of REST Endpoint group" + group, group != RestEndpointGroup.MEMCACHE,
+                    restApiConfig.isGroupEnabled(group));
+        }
     }
 }

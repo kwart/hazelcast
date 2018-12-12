@@ -129,6 +129,8 @@ public class ConfigCompatibilityChecker {
         checkCompatibleConfigs("quorum", c1, c2, c1.getQuorumConfigs(), c2.getQuorumConfigs(), new QuorumConfigChecker());
         checkCompatibleConfigs("security", c1, c2, singletonMap("", c1.getSecurityConfig()),
                 singletonMap("", c2.getSecurityConfig()), new SecurityConfigChecker());
+        checkCompatibleConfigs("rest-api", c1.getRestApiConfig(), c2.getRestApiConfig(),
+                new RestApiConfigChecker());
 
         return true;
     }
@@ -1350,6 +1352,20 @@ public class ConfigCompatibilityChecker {
                     && nullSafeEqual(c1.getQuorumFunctionClassName(), c2.getQuorumFunctionClassName())
                     && nullSafeEqual(c1.getQuorumFunctionImplementation(), c2.getQuorumFunctionImplementation())
                     && nullSafeEqual(c1.getListenerConfigs(), c2.getListenerConfigs()));
+        }
+    }
+
+    static class RestApiConfigChecker extends ConfigChecker<RestApiConfig> {
+        @Override
+        boolean check(RestApiConfig c1, RestApiConfig c2) {
+            if (c1 == c2) {
+                return true;
+            }
+            if (c1 == null || c2 == null) {
+                return false;
+            }
+            return (c1.isEnabled() == c2.isEnabled())
+                    && nullSafeEqual(c1.getEnabledGroups(), c2.getEnabledGroups());
         }
     }
 }

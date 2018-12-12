@@ -89,6 +89,8 @@ import com.hazelcast.config.QuorumListenerConfig;
 import com.hazelcast.config.RecentlyActiveQuorumConfigBuilder;
 import com.hazelcast.config.ReliableTopicConfig;
 import com.hazelcast.config.ReplicatedMapConfig;
+import com.hazelcast.config.RestApiConfig;
+import com.hazelcast.config.RestEndpointGroup;
 import com.hazelcast.config.RingbufferConfig;
 import com.hazelcast.config.RingbufferStoreConfig;
 import com.hazelcast.config.SSLConfig;
@@ -345,6 +347,8 @@ public class HazelcastConfigBeanDefinitionParser extends AbstractHazelcastBeanDe
                         handleCRDTReplication(node);
                     } else if ("pn-counter".equals(nodeName)) {
                         handlePNCounter(node);
+                    } else if ("rest-api".equals(nodeName)) {
+                        handleRestApi(node);
                     }
                 }
             }
@@ -1812,6 +1816,43 @@ public class HazelcastConfigBeanDefinitionParser extends AbstractHazelcastBeanDe
                     filters.add(getTextContent(child));
                 }
             }
+        }
+
+
+        private void handleRestApi(Node node) {
+            BeanDefinitionBuilder restApiConfigBuilder = createBeanBuilder(RestApiConfig.class);
+            AbstractBeanDefinition beanDefinition = restApiConfigBuilder.getBeanDefinition();
+            fillAttributeValues(node, restApiConfigBuilder);
+            ManagedSet<RestEndpointGroup> groupSet = new ManagedSet<RestEndpointGroup>();
+            for (RestEndpointGroup group: RestEndpointGroup.values()) {
+                if (group.isEnabledByDefault()) {
+                    groupSet.add(group);
+                }
+            }
+            for (Node child : childElements(node)) {
+                String nodeName = cleanNodeName(child);
+                if ("endpoint-group".equals(nodeName)) {
+                    NamedNodeMap attributes = child.getAttributes();
+                    Node attrEnabled = attributes.getNamedItem("enabled");
+                    boolean enabled = attrEnabled != null && getBooleanValue(getTextContent(attrEnabled));
+                    String name = getTextContent(attributes.getNamedItem("name"));
+                    RestEndpointGroup group = null;
+                    try {
+                        group = RestEndpointGroup.valueOf(name);
+                    } catch (IllegalArgumentException e) {
+                        throw new InvalidConfigurationException(
+                                "Wrong name attribute value was provided in endpoint-group element: " + name
+                                        + "\nAllowed values: " + Arrays.toString(RestEndpointGroup.values()));
+                    }
+                    if (enabled) {
+                        groupSet.add(group);
+                    } else {
+                        groupSet.remove(group);
+                    }
+                }
+            }
+            restApiConfigBuilder.addPropertyValue("enabledGroups", groupSet);
+            configBuilder.addPropertyValue("restApiConfig", beanDefinition);
         }
     }
 }

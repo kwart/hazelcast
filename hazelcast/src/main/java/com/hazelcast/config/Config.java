@@ -161,6 +161,8 @@ public class Config {
 
     private CRDTReplicationConfig crdtReplicationConfig = new CRDTReplicationConfig();
 
+    private RestApiConfig restApiConfig;
+
     private String licenseKey;
 
     private boolean liteMember;
@@ -3438,6 +3440,15 @@ public class Config {
      */
     public Config setUserCodeDeploymentConfig(UserCodeDeploymentConfig userCodeDeploymentConfig) {
         this.userCodeDeploymentConfig = userCodeDeploymentConfig;
+        return this;
+    }
+
+    public RestApiConfig getRestApiConfig() {
+        return restApiConfig;
+    }
+
+    public Config setRestApiConfig(RestApiConfig restApiConfig) {
+        this.restApiConfig = restApiConfig;
         return this;
     }
 

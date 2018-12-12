@@ -52,6 +52,7 @@ import com.hazelcast.config.QueueConfig;
 import com.hazelcast.config.QuorumConfig;
 import com.hazelcast.config.ReliableTopicConfig;
 import com.hazelcast.config.ReplicatedMapConfig;
+import com.hazelcast.config.RestApiConfig;
 import com.hazelcast.config.RingbufferConfig;
 import com.hazelcast.config.ScheduledExecutorConfig;
 import com.hazelcast.config.SecurityConfig;
@@ -171,6 +172,16 @@ public class DynamicConfigurationAwareConfig extends Config {
         this.isStaticFirst = !properties.getBoolean(SEARCH_DYNAMIC_CONFIG_FIRST);
         this.dynamicSecurityConfig = new DynamicSecurityConfig(staticConfig.getSecurityConfig(), null);
         this.configSearcher = initConfigSearcher();
+    }
+
+    @Override
+    public RestApiConfig getRestApiConfig() {
+        return staticConfig.getRestApiConfig();
+    }
+
+    @Override
+    public Config setRestApiConfig(RestApiConfig restApiConfig) {
+        return staticConfig.setRestApiConfig(restApiConfig);
     }
 
     @Override

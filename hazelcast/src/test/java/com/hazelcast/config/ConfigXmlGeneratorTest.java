@@ -1357,6 +1357,42 @@ public class ConfigXmlGeneratorTest {
                 new ConfigCompatibilityChecker.QuorumConfigChecker().check(quorumConfig, generatedConfig));
     }
 
+    @Test
+    public void testEmptyRestApiConfig() {
+        RestApiConfig restApiConfig = new RestApiConfig();
+        Config config = new Config().setRestApiConfig(restApiConfig);
+        RestApiConfig generatedConfig = getNewConfigViaXMLGenerator(config).getRestApiConfig();
+        assertTrue(generatedConfig.toString() + " should be compatible with " + restApiConfig.toString(),
+                new ConfigCompatibilityChecker.RestApiConfigChecker().check(restApiConfig, generatedConfig));
+    }
+
+    @Test
+    public void testAllEnabledRestApiConfig() {
+        RestApiConfig restApiConfig = new RestApiConfig();
+        restApiConfig.setEnabled(true).enableAllGroups();
+        Config config = new Config().setRestApiConfig(restApiConfig);
+        RestApiConfig generatedConfig = getNewConfigViaXMLGenerator(config).getRestApiConfig();
+        assertTrue(generatedConfig.toString() + " should be compatible with " + restApiConfig.toString(),
+                new ConfigCompatibilityChecker.RestApiConfigChecker().check(restApiConfig, generatedConfig));
+    }
+
+    @Test
+    public void testExplicitlyAssignedGroupsRestApiConfig() {
+        RestApiConfig restApiConfig = new RestApiConfig();
+        restApiConfig.setEnabled(true);
+        restApiConfig.enableGroups(RestEndpointGroup.CLUSTER_READ,
+                RestEndpointGroup.HEALTH_CHECK,
+                RestEndpointGroup.HOT_RESTART,
+                RestEndpointGroup.WAN);
+        restApiConfig.disableGroups(RestEndpointGroup.CLUSTER_WRITE,
+                RestEndpointGroup.DATA,
+                RestEndpointGroup.MEMCACHE);
+        Config config = new Config().setRestApiConfig(restApiConfig);
+        RestApiConfig generatedConfig = getNewConfigViaXMLGenerator(config).getRestApiConfig();
+        assertTrue(generatedConfig.toString() + " should be compatible with " + restApiConfig.toString(),
+                new ConfigCompatibilityChecker.RestApiConfigChecker().check(restApiConfig, generatedConfig));
+    }
+
     private DiscoveryConfig getDummyDiscoveryConfig() {
         DiscoveryStrategyConfig strategyConfig = new DiscoveryStrategyConfig("dummyClass");
         strategyConfig.addProperty("prop1", "val1");

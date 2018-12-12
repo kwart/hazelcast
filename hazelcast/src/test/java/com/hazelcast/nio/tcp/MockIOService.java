@@ -17,6 +17,7 @@
 package com.hazelcast.nio.tcp;
 
 import com.hazelcast.client.impl.ClientEngine;
+import com.hazelcast.config.RestApiConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.instance.BuildInfoProvider;
@@ -328,5 +329,10 @@ public class MockIOService implements IOService {
     @Override
     public OutboundHandler[] createMemberOutboundHandlers(TcpIpConnection connection) {
         return new OutboundHandler[]{new PacketEncoder()};
+    }
+
+    @Override
+    public RestApiConfig getRestApiConfig() {
+        return new RestApiConfig();
     }
 }
