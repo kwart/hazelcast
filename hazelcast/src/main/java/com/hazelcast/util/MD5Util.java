@@ -19,6 +19,7 @@ package com.hazelcast.util;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 
 /**
  * Utility class for hashing with MD5
@@ -29,14 +30,28 @@ public final class MD5Util {
     }
 
     /**
-     * Converts given string to MD5 hash
+     * Converts given string to MD5 hash. Returns MD5 hash from UTF-8 String encoding as a hex-string.
      *
-     * @param str str to be hashed with MD5
+     * @param str string to be hashed with MD5
+     */
+    public static String toMD5String(String str) {
+        return toMD5String(str, null);
+    }
+
+    /**
+     * Converts given string to MD5 hash. Returns MD5 hash from UTF-8 String encoding as a hex-string. If a not-{@code null}
+     * provider argument is given, but the provider name doesn't exist, then {@code null} is returned. The {@code null} is 
+     * also returned when MD5 algorithm is not available in the given provider or registered providers.
+     *
+     * @param str string to be hashed with MD5
+     * @param provider Security Provider name to be used for the {@link MessageDigest}
      */
     @SuppressWarnings("checkstyle:magicnumber")
-    public static String toMD5String(String str) {
+    public static String toMD5String(String str, String provider) {
         try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
+            MessageDigest md = provider==null
+                    ? MessageDigest.getInstance("MD5")
+                    : MessageDigest.getInstance("MD5", provider);
             if (md == null || str == null) {
                 return null;
             }
@@ -48,6 +63,8 @@ public final class MD5Util {
             }
             return sb.toString();
         } catch (NoSuchAlgorithmException ignored) {
+            return null;
+        } catch (NoSuchProviderException e) {
             return null;
         }
     }
