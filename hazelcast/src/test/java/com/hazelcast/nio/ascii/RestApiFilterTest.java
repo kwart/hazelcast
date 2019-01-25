@@ -18,6 +18,7 @@ package com.hazelcast.nio.ascii;
 
 import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -31,16 +32,16 @@ import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 
 /**
- * Tests enabling text protocols by {@link RestApiConfig}.
+ * Tests enabling HTTP REST API by {@link RestApiConfig}.
  */
 @RunWith(HazelcastParallelClassRunner.class)
 @Category(QuickTest.class)
-public class TextProtocolsFilterTest extends AbstractRestApiConfigTestBase {
+public class RestApiFilterTest extends RestApiConfigTestBase {
 
     /**
      * <pre>
      * Given: RestApiConfig is explicitly disabled
-     * When: a custom text protocol is used by client
+     * When: a HTTP GET method is used by client
      * Then: connection is terminated after reading the first 3 bytes (protocol header)
      * </pre>
      */
@@ -52,7 +53,30 @@ public class TextProtocolsFilterTest extends AbstractRestApiConfigTestBase {
         TextProtocolClient client = new TextProtocolClient(getAddress(hz).getInetSocketAddress());
         try {
             client.connect();
-            client.sendData("ABC");
+            client.sendData(GET);
+            client.waitUntilClosed();
+            assertEquals(3, client.getSentBytesCount());
+            assertEquals(0, client.getReceivedBytes().length);
+            assertTrue(client.isConnectionClosed());
+        } finally {
+            client.close();
+        }
+    }
+
+    /**
+     * <pre>
+     * Given: RestApiConfig is not provided (default is used)
+     * When: a HTTP GET method is used by client
+     * Then: connection is terminated after reading the first 3 bytes (protocol header)
+     * </pre>
+     */
+    @Test
+    public void testRestApiDisabledByDefault() throws Exception {
+        HazelcastInstance hz = factory.newHazelcastInstance(null);
+        TextProtocolClient client = new TextProtocolClient(getAddress(hz).getInetSocketAddress());
+        try {
+            client.connect();
+            client.sendData(GET);
             client.waitUntilClosed();
             assertEquals(3, client.getSentBytesCount());
             assertEquals(0, client.getReceivedBytes().length);
@@ -65,20 +89,23 @@ public class TextProtocolsFilterTest extends AbstractRestApiConfigTestBase {
     /**
      * <pre>
      * Given: RestApiConfig is explicitly enabled
-     * When: a custom text protocol is used by client
-     * Then: connection is not terminated after reading the first 3 bytes (protocol header)
+     * When: a memcache command prefix is used by client
+     * Then: connection is terminated after reading the first 3 bytes (protocol header)
      * </pre>
      */
     @Test
-    public void testRestApiDisabledByDefault() throws Exception {
-        HazelcastInstance hz = factory.newHazelcastInstance(null);
+    public void testMemcacheWhenRestApiEnabled() throws Exception {
+        Config config = new Config();
+        config.setRestApiConfig(new RestApiConfig().setEnabled(true));
+        HazelcastInstance hz = factory.newHazelcastInstance(config);
         TextProtocolClient client = new TextProtocolClient(getAddress(hz).getInetSocketAddress());
         try {
             client.connect();
-            client.sendData("ABC");
+            client.sendData("ver");
             client.waitUntilClosed();
+            assertEquals(3, client.getSentBytesCount());
+            assertEquals(0, client.getReceivedBytes().length);
             assertTrue(client.isConnectionClosed());
-            assertEmptyString(client.getReceivedString());
         } finally {
             client.close();
         }
@@ -87,24 +114,25 @@ public class TextProtocolsFilterTest extends AbstractRestApiConfigTestBase {
     /**
      * <pre>
      * Given: RestApiConfig is explicitly enabled
-     * When: a custom text protocol is used by client
-     * Then: the connection is terminated after reading an unknown command line
+     * When: HTTP GET command is used to retrieve a non-Hazelcast resource
+     * Then: connection is terminated after reading the command line
      * </pre>
      */
     @Test
-    public void testRestApiEnabled() throws Exception {
+    public void testHttpGetForUnknownResource() throws Exception {
         Config config = new Config();
         config.setRestApiConfig(new RestApiConfig().setEnabled(true));
         HazelcastInstance hz = factory.newHazelcastInstance(config);
         TextProtocolClient client = new TextProtocolClient(getAddress(hz).getInetSocketAddress());
         try {
             client.connect();
-            client.sendData("ABC");
+            client.sendData(GET);
             client.waitUntilClosed(2000);
-            client.sendData(CRLF);
+            assertFalse(client.isConnectionClosed());
+            client.sendData(" /test/abc HTTP/1.0" + CRLF);
             client.waitUntilClosed();
+            assertEquals(0, client.getReceivedBytes().length);
             assertTrue(client.isConnectionClosed());
-            assertEmptyString(client.getReceivedString());
         } finally {
             client.close();
         }

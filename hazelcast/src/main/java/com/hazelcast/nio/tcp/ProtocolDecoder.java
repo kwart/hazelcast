@@ -17,11 +17,14 @@
 package com.hazelcast.nio.tcp;
 
 import com.hazelcast.client.impl.protocol.util.ClientMessageDecoder;
+import com.hazelcast.config.MemcacheProtocolConfig;
 import com.hazelcast.config.RestApiConfig;
 import com.hazelcast.internal.networking.ChannelOptions;
 import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.HandlerStatus;
 import com.hazelcast.nio.IOService;
+import com.hazelcast.nio.ascii.MemcacheTextDecoder;
+import com.hazelcast.nio.ascii.RestApiTextDecoder;
 import com.hazelcast.nio.ascii.TextDecoder;
 import com.hazelcast.nio.ascii.TextEncoder;
 import com.hazelcast.spi.properties.HazelcastProperties;
@@ -85,13 +88,21 @@ public class ProtocolDecoder extends InboundHandler<ByteBuffer, Void> {
                 initChannelForCluster();
             } else if (CLIENT_BINARY_NEW.equals(protocol)) {
                 initChannelForClient();
-            } else {
+            } else if (RestApiTextDecoder.TEXT_PARSERS.isCommandPrefix(protocol)) {
                 RestApiConfig restApiConfig = ioService.getRestApiConfig();
-                if (! restApiConfig.isEnabledAndNotEmpty()) {
-                    throw new IllegalStateException("Text protocols are not enabled.");
+                if (!restApiConfig.isEnabledAndNotEmpty()) {
+                    throw new IllegalStateException("REST API is not enabled.");
+                }
+                initChannelForText(protocol, true);
+            } else if (MemcacheTextDecoder.TEXT_PARSERS.isCommandPrefix(protocol)) {
+                MemcacheProtocolConfig memcacheProtocolConfig = ioService.getMemcacheProtocolConfig();
+                if (! memcacheProtocolConfig.isEnabled()) {
+                    throw new IllegalStateException("Memcache text protocol is not enabled.");
                 }
                 // text doesn't have a protocol; anything that isn't cluster/client protocol will be interpreted as txt.
-                initChannelForText(protocol);
+                initChannelForText(protocol, false);
+            } else {
+                throw new IllegalStateException("Unknown protocol: " + protocol);
             }
 
             if (!channel.isClientMode()) {
@@ -133,7 +144,7 @@ public class ProtocolDecoder extends InboundHandler<ByteBuffer, Void> {
         channel.inboundPipeline().replace(this, new ClientMessageDecoder(connection, ioService.getClientEngine()));
     }
 
-    private void initChannelForText(String protocol) {
+    private void initChannelForText(String protocol, boolean restApi) {
         ChannelOptions config = channel.options();
 
         config.setOption(SO_RCVBUF, clientRcvBuf());
@@ -145,7 +156,8 @@ public class ProtocolDecoder extends InboundHandler<ByteBuffer, Void> {
 
         channel.attributeMap().put(TextEncoder.TEXT_ENCODER, encoder);
 
-        TextDecoder decoder = new TextDecoder(connection, encoder);
+        TextDecoder decoder = restApi ? new RestApiTextDecoder(connection, encoder)
+                : new MemcacheTextDecoder(connection, encoder);
         decoder.src(newByteBuffer(config.getOption(SO_RCVBUF), config.getOption(DIRECT_BUF)));
         // we need to restore whatever is read
         decoder.src().put(stringToBytes(protocol));

@@ -48,11 +48,7 @@ public enum RestEndpointGroup {
     /**
      * Group of HTTP REST APIs for data manipulation in the cluster (e.g. IMap and IQueue operations).
      */
-    DATA(false),
-    /**
-     * Group which enables MEMCACHE client text protocol support in Hazelcast.
-     */
-    MEMCACHE(false);
+    DATA(false);
 
     private final boolean enabledByDefault;
 

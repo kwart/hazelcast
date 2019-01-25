@@ -131,6 +131,8 @@ public class ConfigCompatibilityChecker {
                 singletonMap("", c2.getSecurityConfig()), new SecurityConfigChecker());
         checkCompatibleConfigs("rest-api", c1.getRestApiConfig(), c2.getRestApiConfig(),
                 new RestApiConfigChecker());
+        checkCompatibleConfigs("memcache-protocol", c1.getMemcacheProtocolConfig(), c2.getMemcacheProtocolConfig(),
+                new MemcacheProtocolConfigChecker());
 
         return true;
     }
@@ -1366,6 +1368,19 @@ public class ConfigCompatibilityChecker {
             }
             return (c1.isEnabled() == c2.isEnabled())
                     && nullSafeEqual(c1.getEnabledGroups(), c2.getEnabledGroups());
+        }
+    }
+
+    static class MemcacheProtocolConfigChecker extends ConfigChecker<MemcacheProtocolConfig> {
+        @Override
+        boolean check(MemcacheProtocolConfig c1, MemcacheProtocolConfig c2) {
+            if (c1 == c2) {
+                return true;
+            }
+            if (c1 == null || c2 == null) {
+                return false;
+            }
+            return (c1.isEnabled() == c2.isEnabled());
         }
     }
 }

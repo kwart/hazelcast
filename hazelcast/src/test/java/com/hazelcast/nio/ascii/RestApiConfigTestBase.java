@@ -18,17 +18,11 @@ package com.hazelcast.nio.ascii;
 
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.getAddress;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
-
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.RestApiConfig;
@@ -36,21 +30,18 @@ import com.hazelcast.config.RestEndpointGroup;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.internal.cluster.Versions;
-import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.TestAwareInstanceFactory;
 
 import static com.hazelcast.config.RestEndpointGroup.CLUSTER_READ;
 import static com.hazelcast.config.RestEndpointGroup.CLUSTER_WRITE;
 import static com.hazelcast.config.RestEndpointGroup.DATA;
 import static com.hazelcast.config.RestEndpointGroup.HEALTH_CHECK;
 import static com.hazelcast.config.RestEndpointGroup.HOT_RESTART;
-import static com.hazelcast.config.RestEndpointGroup.MEMCACHE;
 import static com.hazelcast.config.RestEndpointGroup.WAN;
 
 /**
- * Shared code for {@link RestApiConfig} and {@link TextProtocolsFilter} testing.
+ * Shared code for HTTP REST API and Memcache protocol testing.
  */
-public abstract class AbstractRestApiConfigTestBase {
+public abstract class RestApiConfigTestBase extends AbstractTextProtocolsTestBase {
 
     public static final String POST = "POST";
     public static final String GET = "GET";
@@ -99,19 +90,7 @@ public abstract class AbstractRestApiConfigTestBase {
             new TestUrl(CLUSTER_WRITE, POST, "/hazelcast/1", "HTTP/1.1 404"),
             new TestUrl(CLUSTER_WRITE, GET, "/hazelcast/1", "HTTP/1.1 404"),
             new TestUrl(CLUSTER_WRITE, DELETE, "/hazelcast/1", "HTTP/1.1 404"),
-            // Following URL doesn't represent an HTTP request, but a memcached text protocol command
-            new TestUrl(MEMCACHE, "version", "foo", "VERSION Hazelcast"),
     };
-
-    protected final TestAwareInstanceFactory factory = new TestAwareInstanceFactory();
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    @After
-    public void cleanup() {
-        factory.terminateAll();
-    }
 
     /**
      * Creates Hazelcast {@link Config} with enabled all but provided {@link RestEndpointGroup RestEndpointGroups}.
@@ -146,12 +125,8 @@ public abstract class AbstractRestApiConfigTestBase {
         final TextProtocolClient client = new TextProtocolClient(getAddress(hz).getInetSocketAddress());
         try {
             client.connect();
-            if (testUrl.restEndpointGroup == RestEndpointGroup.MEMCACHE) {
-                client.sendData(testUrl.method + " " + testUrl.requestUri + "\n");
-            } else {
-                client.sendData(testUrl.method + " " + testUrl.requestUri + " HTTP/1.0" + CRLF + CRLF);
-            }
-            assertTrueEventually(createResponseAssertTask(client, testUrl), 10);
+            client.sendData(testUrl.method + " " + testUrl.requestUri + " HTTP/1.0" + CRLF + CRLF);
+            assertTrueEventually(createResponseAssertTask(testUrl.toString(), client, testUrl.expectedSubstring), 10);
         } finally {
             client.close();
         }
@@ -176,15 +151,6 @@ public abstract class AbstractRestApiConfigTestBase {
         } finally {
             client.close();
         }
-    }
-
-    protected AssertTask createResponseAssertTask(final TextProtocolClient client, final TestUrl testUrl) {
-        return new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertThat(testUrl.toString(), client.getReceivedString(), containsString(testUrl.expectedSubstring));
-            }
-        };
     }
 
     static class TestUrl {

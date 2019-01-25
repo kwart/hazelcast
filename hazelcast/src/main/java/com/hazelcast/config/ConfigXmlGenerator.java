@@ -160,6 +160,7 @@ public class ConfigXmlGenerator {
         pnCounterXmlGenerator(gen, config);
         quorumXmlGenerator(gen, config);
         restApiXmlGenerator(gen, config);
+        memcacheProtocolXmlGenerator(gen, config);
 
         xml.append("</hazelcast>");
 
@@ -1388,6 +1389,14 @@ public class ConfigXmlGenerator {
             gen.node("endpoint-group", null, "name", group.name(), "enabled", c.isGroupEnabled(group));
         }
         gen.close();
+    }
+
+    private static void memcacheProtocolXmlGenerator(XmlGenerator gen, Config config) {
+        MemcacheProtocolConfig c = config.getMemcacheProtocolConfig();
+        if (c == null) {
+            return;
+        }
+        gen.node("memcache-protocol", null, "enabled", c.isEnabled());
     }
 
     private String format(String input, int indent) {

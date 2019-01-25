@@ -77,6 +77,7 @@
                 <xs:element name="crdt-replication" type="crdt-replication" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="pn-counter" type="pn-counter" minOccurs="0" maxOccurs="unbounded"/>
                 <xs:element name="rest-api" type="rest-api" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="memcache-protocol" type="memcache-protocol" minOccurs="0" maxOccurs="1"/>
             </xs:choice>
             <xs:attribute name="id" type="xs:string" use="optional" default="default"/>
         </xs:complexType>
@@ -4057,13 +4058,28 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:complexType name="memcache-protocol">
+        <xs:annotation>
+            <xs:documentation>
+                Allows to configure Memcache text protocol.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="enabled" type="xs:boolean" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    Specifies whether the Memcache text protocol support is enabled. Default value is false.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
     <xs:complexType name="rest-api">
         <xs:annotation>
             <xs:documentation>
-                Controls access to Hazelcast text protocols (HTTP REST API, Memcache).
-                The methods available through text protocols are grouped to several REST endpoint groups.
+                Controls access to Hazelcast HTTP REST API.
+                The methods available through REST API are grouped to several REST endpoint groups.
                 There are 2 levels of configuration:
-                 - a global switch which enables/disables access to text protocols;
+                 - a global switch which enables/disables access to the REST API;
                  - REST endpoint group level switch. It is used to check which groups are allowed once the global switch is enabled.
             </xs:documentation>
         </xs:annotation>
@@ -4081,7 +4097,7 @@
         <xs:attribute name="enabled" type="xs:boolean" use="required">
             <xs:annotation>
                 <xs:documentation>
-                    Specifies whether the text-protocols (HTTP REST, Memcache) are enabled or not. Default value is false.
+                    Specifies whether the HTTP REST API is enabled. Default value is false.
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
@@ -4098,7 +4114,6 @@
             <xs:enumeration value="HOT_RESTART"/>
             <xs:enumeration value="WAN"/>
             <xs:enumeration value="DATA"/>
-            <xs:enumeration value="MEMCACHE"/>
         </xs:restriction>
     </xs:simpleType>
 </xs:schema>

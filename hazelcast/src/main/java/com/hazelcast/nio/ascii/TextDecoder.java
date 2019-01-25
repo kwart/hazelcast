@@ -16,23 +16,21 @@
 
 package com.hazelcast.nio.ascii;
 
+import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.ERROR_CLIENT;
+import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.UNKNOWN;
+import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
+import static com.hazelcast.nio.IOUtil.compactOrClear;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
 import com.hazelcast.internal.ascii.CommandParser;
 import com.hazelcast.internal.ascii.TextCommand;
 import com.hazelcast.internal.ascii.TextCommandService;
-import com.hazelcast.internal.ascii.memcache.DeleteCommandParser;
 import com.hazelcast.internal.ascii.memcache.ErrorCommand;
-import com.hazelcast.internal.ascii.memcache.GetCommandParser;
-import com.hazelcast.internal.ascii.memcache.IncrementCommandParser;
-import com.hazelcast.internal.ascii.memcache.SetCommandParser;
-import com.hazelcast.internal.ascii.memcache.SimpleCommandParser;
-import com.hazelcast.internal.ascii.memcache.TouchCommandParser;
 import com.hazelcast.internal.ascii.rest.HttpCommand;
-import com.hazelcast.internal.ascii.rest.HttpDeleteCommandParser;
-import com.hazelcast.internal.ascii.rest.HttpGetCommandParser;
-import com.hazelcast.internal.ascii.rest.HttpHeadCommandParser;
-import com.hazelcast.internal.ascii.rest.HttpPostCommandParser;
-import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.HandlerStatus;
+import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.ConnectionType;
 import com.hazelcast.nio.IOService;
@@ -40,60 +38,14 @@ import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.spi.annotation.PrivateApi;
 import com.hazelcast.util.StringUtil;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-
-import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.ADD;
-import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.APPEND;
-import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.DECREMENT;
-import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.ERROR_CLIENT;
-import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.INCREMENT;
-import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.PREPEND;
-import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.QUIT;
-import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.REPLACE;
-import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.SET;
-import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.STATS;
-import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.TOUCH;
-import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.UNKNOWN;
-import static com.hazelcast.internal.ascii.TextCommandConstants.TextCommandType.VERSION;
-import static com.hazelcast.internal.networking.HandlerStatus.CLEAN;
-import static com.hazelcast.nio.IOUtil.compactOrClear;
-
 @PrivateApi
-public class TextDecoder extends InboundHandler<ByteBuffer, Void> {
-
-    static final Map<String, CommandParser> MAP_COMMAND_PARSERS = new HashMap<String, CommandParser>();
+public abstract class TextDecoder extends InboundHandler<ByteBuffer, Void> {
 
     @SuppressWarnings("checkstyle:magicnumber")
     private static final int INITIAL_CAPACITY = 1 << 8;
     // 65536, no specific reason, similar to UDP packet size limit
     @SuppressWarnings("checkstyle:magicnumber")
     private static final int MAX_CAPACITY = 1 << 16;
-
-    static {
-        MAP_COMMAND_PARSERS.put("get", new GetCommandParser());
-        MAP_COMMAND_PARSERS.put("gets", new GetCommandParser());
-        MAP_COMMAND_PARSERS.put("set", new SetCommandParser(SET));
-        MAP_COMMAND_PARSERS.put("add", new SetCommandParser(ADD));
-        MAP_COMMAND_PARSERS.put("replace", new SetCommandParser(REPLACE));
-        MAP_COMMAND_PARSERS.put("append", new SetCommandParser(APPEND));
-        MAP_COMMAND_PARSERS.put("prepend", new SetCommandParser(PREPEND));
-        MAP_COMMAND_PARSERS.put("touch", new TouchCommandParser(TOUCH));
-        MAP_COMMAND_PARSERS.put("incr", new IncrementCommandParser(INCREMENT));
-        MAP_COMMAND_PARSERS.put("decr", new IncrementCommandParser(DECREMENT));
-        MAP_COMMAND_PARSERS.put("delete", new DeleteCommandParser());
-        MAP_COMMAND_PARSERS.put("quit", new SimpleCommandParser(QUIT));
-        MAP_COMMAND_PARSERS.put("stats", new SimpleCommandParser(STATS));
-        MAP_COMMAND_PARSERS.put("version", new SimpleCommandParser(VERSION));
-        MAP_COMMAND_PARSERS.put("GET", new HttpGetCommandParser());
-        MAP_COMMAND_PARSERS.put("POST", new HttpPostCommandParser());
-        MAP_COMMAND_PARSERS.put("PUT", new HttpPostCommandParser());
-        MAP_COMMAND_PARSERS.put("DELETE", new HttpDeleteCommandParser());
-        MAP_COMMAND_PARSERS.put("HEAD", new HttpHeadCommandParser());
-    }
-
 
     private ByteBuffer commandLineBuffer = ByteBuffer.allocate(INITIAL_CAPACITY);
     private boolean commandLineRead;
@@ -103,15 +55,18 @@ public class TextDecoder extends InboundHandler<ByteBuffer, Void> {
     private final TcpIpConnection connection;
     private boolean connectionTypeSet;
     private long requestIdGen;
-    private final TextProtocolsFilter textProtocolFilter;
+    private final TextProtocolFilter textProtocolFilter;
     private final ILogger logger;
+    private final TextParsers textParsers;
 
-    public TextDecoder(TcpIpConnection connection, TextEncoder encoder) {
+    public TextDecoder(TcpIpConnection connection, TextEncoder encoder, TextProtocolFilter textProtocolFilter,
+            TextParsers textParsers) {
         IOService ioService = connection.getConnectionManager().getIoService();
         this.textCommandService = ioService.getTextCommandService();
         this.encoder = encoder;
         this.connection = connection;
-        this.textProtocolFilter = new TextProtocolsFilter(ioService.getRestApiConfig());
+        this.textProtocolFilter = textProtocolFilter;
+        this.textParsers = textParsers;
         this.logger = ioService.getLoggingService().getLogger(getClass());
     }
 
@@ -234,7 +189,7 @@ public class TextDecoder extends InboundHandler<ByteBuffer, Void> {
         try {
             int space = cmd.indexOf(' ');
             String operation = (space == -1) ? cmd : cmd.substring(0, space);
-            CommandParser commandParser = MAP_COMMAND_PARSERS.get(operation);
+            CommandParser commandParser = textParsers.getParser(operation);
             if (commandParser != null) {
                 command = commandParser.parser(this, cmd, space);
             } else {

@@ -1358,6 +1358,15 @@ public class ConfigXmlGeneratorTest {
     }
 
     @Test
+    public void testMemcacheProtocolConfig() {
+        MemcacheProtocolConfig memcacheProtocolConfig = new MemcacheProtocolConfig().setEnabled(true);
+        Config config = new Config().setMemcacheProtocolConfig(memcacheProtocolConfig);
+        MemcacheProtocolConfig generatedConfig = getNewConfigViaXMLGenerator(config).getMemcacheProtocolConfig();
+        assertTrue(generatedConfig.toString() + " should be compatible with " + memcacheProtocolConfig.toString(),
+                new ConfigCompatibilityChecker.MemcacheProtocolConfigChecker().check(memcacheProtocolConfig, generatedConfig));
+    }
+
+    @Test
     public void testEmptyRestApiConfig() {
         RestApiConfig restApiConfig = new RestApiConfig();
         Config config = new Config().setRestApiConfig(restApiConfig);
@@ -1385,8 +1394,7 @@ public class ConfigXmlGeneratorTest {
                 RestEndpointGroup.HOT_RESTART,
                 RestEndpointGroup.WAN);
         restApiConfig.disableGroups(RestEndpointGroup.CLUSTER_WRITE,
-                RestEndpointGroup.DATA,
-                RestEndpointGroup.MEMCACHE);
+                RestEndpointGroup.DATA);
         Config config = new Config().setRestApiConfig(restApiConfig);
         RestApiConfig generatedConfig = getNewConfigViaXMLGenerator(config).getRestApiConfig();
         assertTrue(generatedConfig.toString() + " should be compatible with " + restApiConfig.toString(),

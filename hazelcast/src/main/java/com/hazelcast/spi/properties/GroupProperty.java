@@ -16,8 +16,6 @@
 
 package com.hazelcast.spi.properties;
 
-import com.hazelcast.config.RestApiConfig;
-import com.hazelcast.config.RestEndpointGroup;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.IndeterminateOperationStateException;
@@ -246,19 +244,21 @@ public final class GroupProperty {
             = new HazelcastProperty("hazelcast.connect.all.wait.seconds", 120, SECONDS);
 
     /**
-     * @deprecated Enable or disable the {@link RestEndpointGroup#MEMCACHE} group in {@link RestApiConfig} instead.
+     * @deprecated Use {@link com.hazelcast.config.MemcacheProtocolConfig} instead.
      */
     @Deprecated
     public static final HazelcastProperty MEMCACHE_ENABLED
             = new HazelcastProperty("hazelcast.memcache.enabled", false);
     /**
-     * @deprecated Use {@link RestEndpointGroup RestEndpointGroups} in {@link RestApiConfig} instead.
+     * @deprecated Use {@link com.hazelcast.config.RestEndpointGroup RestEndpointGroups} in
+     *             {@link com.hazelcast.config.RestApiConfig} instead.
      */
     @Deprecated
     public static final HazelcastProperty REST_ENABLED
             = new HazelcastProperty("hazelcast.rest.enabled", false);
     /**
-     * @deprecated Enable or disable the {@link RestEndpointGroup#HEALTH_CHECK} group in {@link RestApiConfig} instead.
+     * @deprecated Enable or disable the {@link com.hazelcast.config.RestEndpointGroup#HEALTH_CHECK} group in
+     *             {@link com.hazelcast.config.RestApiConfig} instead.
      */
     @Deprecated
     public static final HazelcastProperty HTTP_HEALTHCHECK_ENABLED
@@ -611,7 +611,8 @@ public final class GroupProperty {
     public static final HazelcastProperty MC_MAX_VISIBLE_SLOW_OPERATION_COUNT
             = new HazelcastProperty("hazelcast.mc.max.visible.slow.operations.count", 10);
     /**
-     * @deprecated Enable or disable the {@link RestEndpointGroup#CLUSTER_WRITE} group in {@link RestApiConfig} instead.
+     * @deprecated Enable or disable the {@link com.hazelcast.config.RestEndpointGroup#CLUSTER_WRITE} group in
+     *             {@link com.hazelcast.config.RestApiConfig} instead.
      */
     @Deprecated
     public static final HazelcastProperty MC_URL_CHANGE_ENABLED

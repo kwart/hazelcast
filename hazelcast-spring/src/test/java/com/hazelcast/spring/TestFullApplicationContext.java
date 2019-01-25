@@ -60,6 +60,7 @@ import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.MemberAddressProviderConfig;
 import com.hazelcast.config.MemberAttributeConfig;
 import com.hazelcast.config.MemberGroupConfig;
+import com.hazelcast.config.MemcacheProtocolConfig;
 import com.hazelcast.config.MergePolicyConfig;
 import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.config.MultiMapConfig;
@@ -1427,8 +1428,14 @@ public class TestFullApplicationContext extends HazelcastTestSupport {
         assertNotNull(restApiConfig);
         assertFalse(restApiConfig.isEnabled());
         for (RestEndpointGroup group : RestEndpointGroup.values()) {
-            assertEquals("Unexpected status of REST Endpoint group" + group, group != RestEndpointGroup.MEMCACHE,
-                    restApiConfig.isGroupEnabled(group));
+            assertTrue("Unexpected status of REST Endpoint group" + group, restApiConfig.isGroupEnabled(group));
         }
+    }
+
+    @Test
+    public void testMemcacheProtocolConfig() {
+        MemcacheProtocolConfig memcacheProtocolConfig = config.getMemcacheProtocolConfig();
+        assertNotNull(memcacheProtocolConfig);
+        assertTrue(memcacheProtocolConfig.isEnabled());
     }
 }

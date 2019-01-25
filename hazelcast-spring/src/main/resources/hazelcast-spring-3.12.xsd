@@ -38,6 +38,7 @@
                         <xs:element name="wan-replication" type="wan-replication" minOccurs="0" maxOccurs="unbounded"/>
                         <xs:element name="network" type="network" minOccurs="0" maxOccurs="1"/>
                         <xs:element name="rest-api" type="rest-api" minOccurs="0" maxOccurs="1"/>
+                        <xs:element name="memcache-protocol" type="memcache-protocol" minOccurs="0" maxOccurs="1"/>
                         <xs:element name="partition-group" type="partition-group" minOccurs="0" maxOccurs="1"/>
                         <xs:element name="executor-service" minOccurs="0" maxOccurs="unbounded">
                             <xs:complexType>
@@ -2882,6 +2883,9 @@
         </xs:attribute>
     </xs:complexType>
 
+    <xs:complexType name="memcache-protocol">
+        <xs:attribute name="enabled" type="xs:boolean" use="required"/>
+    </xs:complexType>
     <xs:complexType name="rest-api">
         <xs:choice minOccurs="0" maxOccurs="unbounded">
             <xs:element name="endpoint-group" minOccurs="0" maxOccurs="unbounded">

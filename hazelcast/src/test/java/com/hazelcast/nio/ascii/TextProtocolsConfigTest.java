@@ -18,6 +18,7 @@ package com.hazelcast.nio.ascii;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigurationException;
+import com.hazelcast.config.MemcacheProtocolConfig;
 import com.hazelcast.config.RestApiConfig;
 import com.hazelcast.config.RestEndpointGroup;
 import com.hazelcast.core.HazelcastInstance;
@@ -30,19 +31,19 @@ import org.junit.runner.RunWith;
 
 import static com.hazelcast.config.RestEndpointGroup.DATA;
 import static com.hazelcast.config.RestEndpointGroup.HEALTH_CHECK;
-import static com.hazelcast.config.RestEndpointGroup.MEMCACHE;
+import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
+import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests enabling text protocols by {@link RestApiConfig} and legacy system properties.
+ * Tests enabling text protocols by {@link RestApiConfig}, {@link MemcacheProtocolConfig} and legacy system properties.
  */
 @RunWith(HazelcastParallelClassRunner.class)
 @Category(QuickTest.class)
 @SuppressWarnings("deprecation")
-public class BasicRestApiConfigTest extends AbstractRestApiConfigTestBase {
+public class TextProtocolsConfigTest extends RestApiConfigTestBase {
 
-    private static final TestUrl TEST_URL_MEMCACHE = new TestUrl(MEMCACHE, "version", "foo", "VERSION Hazelcast");
     private static final TestUrl TEST_URL_HEALTH_CHECK =
             new TestUrl(HEALTH_CHECK, GET, "/hazelcast/health/node-state", "ACTIVE");
     private static final TestUrl TEST_URL_DATA = new TestUrl(DATA, GET, "/hazelcast/rest/maps/test/testKey", "testValue");
@@ -161,7 +162,17 @@ public class BasicRestApiConfigTest extends AbstractRestApiConfigTestBase {
     public void testRestConfigWithMemcacheProperty() throws Exception {
         Config config = new Config()
                 .setProperty(GroupProperty.MEMCACHE_ENABLED.getName(), "true");
-        createMemberWithRestConfigAndAssertConfigException(config);
+        config.setRestApiConfig(new RestApiConfig());
+        factory.newHazelcastInstance(config);
+    }
+
+    @Test
+    public void testMemcacheProtocolConfigWithMemcachePropertyEnabled() throws Exception {
+        Config config = new Config()
+                .setProperty(GroupProperty.MEMCACHE_ENABLED.getName(), "true");
+        config.setMemcacheProtocolConfig(new MemcacheProtocolConfig());
+        expectedException.expect(ConfigurationException.class);
+        factory.newHazelcastInstance(config);
     }
 
     @Test
@@ -181,8 +192,18 @@ public class BasicRestApiConfigTest extends AbstractRestApiConfigTestBase {
     @Test
     public void testRestConfigWithMemcachePropertyDisabled() throws Exception {
         Config config = new Config()
-                .setProperty(GroupProperty.MEMCACHE_ENABLED.getName(), "true");
-        createMemberWithRestConfigAndAssertConfigException(config);
+                .setProperty(GroupProperty.MEMCACHE_ENABLED.getName(), "false");
+        config.setRestApiConfig(new RestApiConfig());
+        factory.newHazelcastInstance(config);
+    }
+
+    @Test
+    public void testMemcacheProtocolConfigWithMemcachePropertyDisabled() throws Exception {
+        Config config = new Config()
+                .setProperty(GroupProperty.MEMCACHE_ENABLED.getName(), "false");
+        config.setMemcacheProtocolConfig(new MemcacheProtocolConfig());
+        expectedException.expect(ConfigurationException.class);
+        factory.newHazelcastInstance(config);
     }
 
     @Test
@@ -190,9 +211,15 @@ public class BasicRestApiConfigTest extends AbstractRestApiConfigTestBase {
         Config config = new Config()
                 .setProperty(GroupProperty.MEMCACHE_ENABLED.getName(), "true");
         HazelcastInstance hz = factory.newHazelcastInstance(config);
-        assertTextProtocolResponse(hz, TEST_URL_MEMCACHE);
-        assertTextProtocolResponse(hz, TEST_URL_HEALTH_CHECK);
-        assertNoTextProtocolResponse(hz, TEST_URL_DATA);
+        assertNoTextProtocolResponse(hz, TEST_URL_HEALTH_CHECK);
+        TextProtocolClient client = new TextProtocolClient(getAddress(hz).getInetSocketAddress());
+        try {
+            client.connect();
+            client.sendData("version\n");
+            assertTrueEventually(createResponseAssertTask("Version expected", client, "VERSION Hazelcast"), 10);
+        } finally {
+            client.close();
+        }
     }
 
     @Test
@@ -200,7 +227,6 @@ public class BasicRestApiConfigTest extends AbstractRestApiConfigTestBase {
         Config config = new Config()
                 .setProperty(GroupProperty.MEMCACHE_ENABLED.getName(), "false");
         HazelcastInstance hz = factory.newHazelcastInstance(config);
-        assertNoTextProtocolResponse(hz, TEST_URL_MEMCACHE);
         assertNoTextProtocolResponse(hz, TEST_URL_DATA);
         assertNoTextProtocolResponse(hz, TEST_URL_HEALTH_CHECK);
     }
@@ -211,7 +237,6 @@ public class BasicRestApiConfigTest extends AbstractRestApiConfigTestBase {
                 .setProperty(GroupProperty.HTTP_HEALTHCHECK_ENABLED.getName(), "true");
         HazelcastInstance hz = factory.newHazelcastInstance(config);
         assertTextProtocolResponse(hz, TEST_URL_HEALTH_CHECK);
-        assertNoTextProtocolResponse(hz, TEST_URL_MEMCACHE);
         assertNoTextProtocolResponse(hz, TEST_URL_DATA);
     }
 
@@ -220,7 +245,6 @@ public class BasicRestApiConfigTest extends AbstractRestApiConfigTestBase {
         Config config = new Config()
                 .setProperty(GroupProperty.HTTP_HEALTHCHECK_ENABLED.getName(), "false");
         HazelcastInstance hz = factory.newHazelcastInstance(config);
-        assertNoTextProtocolResponse(hz, TEST_URL_MEMCACHE);
         assertNoTextProtocolResponse(hz, TEST_URL_DATA);
         assertNoTextProtocolResponse(hz, TEST_URL_HEALTH_CHECK);
     }
@@ -233,7 +257,6 @@ public class BasicRestApiConfigTest extends AbstractRestApiConfigTestBase {
         hz.getMap("test").put("testKey", "testValue");
         assertTextProtocolResponse(hz, TEST_URL_DATA);
         assertTextProtocolResponse(hz, TEST_URL_HEALTH_CHECK);
-        assertNoTextProtocolResponse(hz, TEST_URL_MEMCACHE);
     }
 
     @Test
@@ -242,7 +265,6 @@ public class BasicRestApiConfigTest extends AbstractRestApiConfigTestBase {
                 .setProperty(GroupProperty.REST_ENABLED.getName(), "false");
         HazelcastInstance hz = factory.newHazelcastInstance(config);
         hz.getMap("test").put("testKey", "testValue");
-        assertNoTextProtocolResponse(hz, TEST_URL_MEMCACHE);
         assertNoTextProtocolResponse(hz, TEST_URL_DATA);
         assertNoTextProtocolResponse(hz, TEST_URL_HEALTH_CHECK);
     }
@@ -258,7 +280,6 @@ public class BasicRestApiConfigTest extends AbstractRestApiConfigTestBase {
         hz.getMap("test").put("testKey", "testValue");
         assertTextProtocolResponse(hz, TEST_URL_DATA);
         assertTextProtocolResponse(hz, TEST_URL_HEALTH_CHECK);
-        assertTextProtocolResponse(hz, TEST_URL_MEMCACHE);
     }
 
     private void createMemberWithRestConfigAndAssertConfigException(Config config) {

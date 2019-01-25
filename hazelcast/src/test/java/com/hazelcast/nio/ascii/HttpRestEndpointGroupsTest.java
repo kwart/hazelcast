@@ -35,7 +35,7 @@ import com.hazelcast.test.annotation.QuickTest;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
 @Category(QuickTest.class)
-public class HttpRestEndpointGroupsTest extends AbstractRestApiConfigTestBase {
+public class HttpRestEndpointGroupsTest extends RestApiConfigTestBase {
 
     @Parameter
     public RestEndpointGroup restEndpointGroup;

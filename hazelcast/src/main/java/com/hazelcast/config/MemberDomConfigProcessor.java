@@ -64,6 +64,7 @@ import static com.hazelcast.config.ConfigSections.LITE_MEMBER;
 import static com.hazelcast.config.ConfigSections.LOCK;
 import static com.hazelcast.config.ConfigSections.MANAGEMENT_CENTER;
 import static com.hazelcast.config.ConfigSections.MAP;
+import static com.hazelcast.config.ConfigSections.MEMCACHE_PROTOCOL;
 import static com.hazelcast.config.ConfigSections.MEMBER_ATTRIBUTES;
 import static com.hazelcast.config.ConfigSections.MERKLE_TREE;
 import static com.hazelcast.config.ConfigSections.MULTIMAP;
@@ -224,6 +225,8 @@ class MemberDomConfigProcessor extends AbstractDomConfigProcessor {
             handlePNCounter(node);
         } else if (REST_API.isEqual(nodeName)) {
             handleRestApi(node);
+        } else if (MEMCACHE_PROTOCOL.isEqual(nodeName)) {
+            handleMemcacheProtocol(node);
         } else {
             return true;
         }
@@ -2384,6 +2387,13 @@ class MemberDomConfigProcessor extends AbstractDomConfigProcessor {
                 permConfig.addAction(getTextContent(child).trim());
             }
         }
+    }
+
+    private void handleMemcacheProtocol(Node node) {
+        MemcacheProtocolConfig memcacheProtocolConfig = new MemcacheProtocolConfig();
+        config.setMemcacheProtocolConfig(memcacheProtocolConfig);
+        boolean enabled = getBooleanValue(getAttribute(node, "enabled"));
+        memcacheProtocolConfig.setEnabled(enabled);
     }
 
     private void handleRestApi(Node node) {

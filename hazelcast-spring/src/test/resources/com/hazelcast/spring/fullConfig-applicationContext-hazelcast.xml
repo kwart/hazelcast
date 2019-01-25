@@ -814,6 +814,8 @@
                 <hz:replica-count>100</hz:replica-count>
             </hz:pn-counter>
 
+            <hz:memcache-protocol enabled="true"/>
+
             <hz:rest-api enabled="false">
                 <hz:endpoint-group name="CLUSTER_READ" enabled="true"/>
                 <hz:endpoint-group name="CLUSTER_WRITE" enabled="true"/>

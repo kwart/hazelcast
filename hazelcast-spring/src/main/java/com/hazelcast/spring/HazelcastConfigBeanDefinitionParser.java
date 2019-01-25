@@ -65,6 +65,7 @@ import com.hazelcast.config.MaxSizeConfig.MaxSizePolicy;
 import com.hazelcast.config.MemberAddressProviderConfig;
 import com.hazelcast.config.MemberAttributeConfig;
 import com.hazelcast.config.MemberGroupConfig;
+import com.hazelcast.config.MemcacheProtocolConfig;
 import com.hazelcast.config.MergePolicyConfig;
 import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.config.MultiMapConfig;
@@ -349,6 +350,8 @@ public class HazelcastConfigBeanDefinitionParser extends AbstractHazelcastBeanDe
                         handlePNCounter(node);
                     } else if ("rest-api".equals(nodeName)) {
                         handleRestApi(node);
+                    } else if ("memcache-protocol".equals(nodeName)) {
+                        handleMemcacheProtocol(node);
                     }
                 }
             }
@@ -1818,7 +1821,6 @@ public class HazelcastConfigBeanDefinitionParser extends AbstractHazelcastBeanDe
             }
         }
 
-
         private void handleRestApi(Node node) {
             BeanDefinitionBuilder restApiConfigBuilder = createBeanBuilder(RestApiConfig.class);
             AbstractBeanDefinition beanDefinition = restApiConfigBuilder.getBeanDefinition();
@@ -1853,6 +1855,13 @@ public class HazelcastConfigBeanDefinitionParser extends AbstractHazelcastBeanDe
             }
             restApiConfigBuilder.addPropertyValue("enabledGroups", groupSet);
             configBuilder.addPropertyValue("restApiConfig", beanDefinition);
+        }
+
+        private void handleMemcacheProtocol(Node node) {
+            BeanDefinitionBuilder memcacheProtocolConfigBuilder = createBeanBuilder(MemcacheProtocolConfig.class);
+            AbstractBeanDefinition beanDefinition = memcacheProtocolConfigBuilder.getBeanDefinition();
+            fillAttributeValues(node, memcacheProtocolConfigBuilder);
+            configBuilder.addPropertyValue("memcacheProtocolConfig", beanDefinition);
         }
     }
 }

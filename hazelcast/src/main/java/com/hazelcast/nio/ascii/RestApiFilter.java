@@ -24,25 +24,28 @@ import com.hazelcast.internal.ascii.rest.HttpCommandProcessor;
 import com.hazelcast.nio.tcp.TcpIpConnection;
 
 /**
- * This class is a text protocols policy enforcement point. It checks incoming command lines and validates if the command can be
- * processed. If the command is unknown or not allowed the connection is closed.
+ * This class is a policy enforcement point for HTTP REST API. It checks incoming command lines and validates if the command can
+ * be processed. If the command is unknown or not allowed the connection is closed.
  */
-class TextProtocolsFilter {
+public class RestApiFilter implements TextProtocolFilter {
 
     private final RestApiConfig restApiConfig;
+    private final TextParsers parsers;
 
-    TextProtocolsFilter(RestApiConfig restApiConfig) {
+    RestApiFilter(RestApiConfig restApiConfig, TextParsers parsers) {
         this.restApiConfig = restApiConfig;
+        this.parsers = parsers;
     }
 
-    void filterConnection(String commandLine, TcpIpConnection connection) {
+    @Override
+    public void filterConnection(String commandLine, TcpIpConnection connection) {
         RestEndpointGroup restEndpointGroup = getEndpointGroup(commandLine);
         if (restEndpointGroup != null) {
             if (!restApiConfig.isGroupEnabled(restEndpointGroup)) {
                 connection.close("REST endpoint group is not enabled - " + restEndpointGroup, null);
             }
         } else if (!commandLine.isEmpty()) {
-            connection.close("Unsupported command received on Text protocols handler.", null);
+            connection.close("Unsupported command received on REST API handler.", null);
         }
     }
 
@@ -55,23 +58,14 @@ class TextProtocolsFilter {
             return null;
         }
         StringTokenizer st = new StringTokenizer(commandLine);
-        if (!st.hasMoreTokens()) {
-            return null;
-        }
-        String operation = st.nextToken();
+        String operation = nextToken(st);
         // If the operation doesn't have a parser, then it's unknown.
-        if (!TextDecoder.MAP_COMMAND_PARSERS.containsKey(operation)) {
+        if (parsers.getParser(operation) == null) {
             return null;
-        }
-        // If the operation is not an HTTP method name, then it has to be a Memcache command
-        if (!isHttpMethod(operation)) {
-            return RestEndpointGroup.MEMCACHE;
         }
         // the operation is a HTTP method so the next token should be a resource path
-        if (!st.hasMoreTokens()) {
-            return null;
-        }
-        return getHttpApiEndpointGroup(operation, st.nextToken());
+        String requestUri = nextToken(st);
+        return requestUri != null ? getHttpApiEndpointGroup(operation, requestUri) : null;
     }
 
     @SuppressWarnings({ "checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity",
@@ -108,8 +102,7 @@ class TextProtocolsFilter {
         return null;
     }
 
-    private boolean isHttpMethod(String operation) {
-        return "GET".equals(operation) || "HEAD".equals(operation) || "POST".equals(operation) || "PUT".equals(operation)
-                || "DELETE".equals(operation);
+    private String nextToken(StringTokenizer st) {
+        return st.hasMoreTokens() ? st.nextToken() : null;
     }
 }

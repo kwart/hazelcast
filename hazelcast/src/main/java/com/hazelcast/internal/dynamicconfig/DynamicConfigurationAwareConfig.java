@@ -42,6 +42,7 @@ import com.hazelcast.config.LockConfig;
 import com.hazelcast.config.ManagementCenterConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MemberAttributeConfig;
+import com.hazelcast.config.MemcacheProtocolConfig;
 import com.hazelcast.config.MerkleTreeConfig;
 import com.hazelcast.config.MultiMapConfig;
 import com.hazelcast.config.NativeMemoryConfig;
@@ -182,6 +183,16 @@ public class DynamicConfigurationAwareConfig extends Config {
     @Override
     public Config setRestApiConfig(RestApiConfig restApiConfig) {
         return staticConfig.setRestApiConfig(restApiConfig);
+    }
+
+    @Override
+    public MemcacheProtocolConfig getMemcacheProtocolConfig() {
+        return staticConfig.getMemcacheProtocolConfig();
+    }
+
+    @Override
+    public Config setMemcacheProtocolConfig(MemcacheProtocolConfig memcacheProtocolConfig) {
+        return staticConfig.setMemcacheProtocolConfig(memcacheProtocolConfig);
     }
 
     @Override

@@ -2915,6 +2915,17 @@ public class XMLConfigBuilderTest extends HazelcastTestSupport {
     }
 
     @Test
+    public void testMemcacheConfigEnabled() {
+        String xml = HAZELCAST_START_TAG
+                + "<memcache-config enabled='true'/>\n"
+                + HAZELCAST_END_TAG;
+        Config config = buildConfig(xml);
+        MemcacheProtocolConfig memcacheProtocolConfig = config.getMemcacheProtocolConfig();
+        assertNotNull(memcacheProtocolConfig);
+        assertTrue(memcacheProtocolConfig.isEnabled());
+    }
+
+    @Test
     public void testRestApiDefaults() {
         String xml = HAZELCAST_START_TAG
                 + "<rest-api enabled='false'/>\n"
@@ -2942,7 +2953,6 @@ public class XMLConfigBuilderTest extends HazelcastTestSupport {
         RestApiConfig restApiConfig = config.getRestApiConfig();
         assertTrue(restApiConfig.isEnabled());
         assertTrue(restApiConfig.isGroupEnabled(RestEndpointGroup.HEALTH_CHECK));
-        assertTrue(restApiConfig.isGroupEnabled(RestEndpointGroup.MEMCACHE));
         assertFalse(restApiConfig.isGroupEnabled(RestEndpointGroup.CLUSTER_READ));
         assertEquals(RestEndpointGroup.CLUSTER_WRITE.isEnabledByDefault(),
                 restApiConfig.isGroupEnabled(RestEndpointGroup.CLUSTER_WRITE));
