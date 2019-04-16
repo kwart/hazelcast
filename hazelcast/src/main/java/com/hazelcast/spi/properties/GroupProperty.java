@@ -1099,6 +1099,13 @@ public final class GroupProperty {
     public static final HazelcastProperty SEARCH_DYNAMIC_CONFIG_FIRST
             = new HazelcastProperty("hazelcast.data.search.dynamic.config.first.enabled", false);
 
+    /**
+     * Client protocol message size limit (in bytes) for unverified connections (i.e. maximal length of authentication message
+     * frame).
+     */
+    public static final HazelcastProperty CLIENT_PROTOCOL_UNVERIFIED_FRAME_LENGTH =
+            new HazelcastProperty("hazelcast.client.protocol.max.frame.length", 1024);
+
     private GroupProperty() {
     }
 }
