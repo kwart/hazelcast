@@ -264,8 +264,9 @@ public class ClientEngineImpl implements ClientEngine, CoreService, PreJoinAware
         Class clazz = messageTask.getClass();
         return clazz == PingMessageTask.class
                 || clazz == GetPartitionsMessageTask.class
-                || clazz == AuthenticationMessageTask.class
-                || clazz == AuthenticationCustomCredentialsMessageTask.class;
+//                || clazz == AuthenticationMessageTask.class
+//                || clazz == AuthenticationCustomCredentialsMessageTask.class
+                ;
     }
 
     private boolean isQuery(MessageTask messageTask) {
