@@ -28,6 +28,7 @@ import com.hazelcast.util.ExceptionUtil;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 class DroppingConnection implements Connection {
@@ -128,5 +129,10 @@ class DroppingConnection implements Connection {
     @Override
     public int getPort() {
         return endpoint.getPort();
+    }
+
+    @Override
+    public ConcurrentMap attributeMap() {
+        return null;
     }
 }

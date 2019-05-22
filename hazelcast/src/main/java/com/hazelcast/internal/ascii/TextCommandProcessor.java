@@ -16,9 +16,15 @@
 
 package com.hazelcast.internal.ascii;
 
+import com.hazelcast.nio.Connection;
+
 public interface TextCommandProcessor<T> {
 
     void handle(T request);
 
     void handleRejection(T request);
+
+    default void handle(T request, Connection connection) {
+        handle(request);
+    }
 }

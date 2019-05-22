@@ -179,7 +179,7 @@ public abstract class TextDecoder extends InboundHandler<ByteBuffer, Void> {
         }
         long requestId = (command.shouldReply()) ? requestIdGen++ : -1;
         command.init(this, requestId);
-        textCommandService.processRequest(command);
+        textCommandService.processRequest(command, connection);
     }
 
     private boolean isCommandTypeEnabled(TextCommand command) {

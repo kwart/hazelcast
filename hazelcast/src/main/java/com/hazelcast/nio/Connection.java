@@ -16,11 +16,12 @@
 
 package com.hazelcast.nio;
 
-import com.hazelcast.internal.networking.OutboundFrame;
-import com.hazelcast.spi.annotation.PrivateApi;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.concurrent.ConcurrentMap;
+
+import com.hazelcast.internal.networking.OutboundFrame;
+import com.hazelcast.spi.annotation.PrivateApi;
 
 /**
  * Represents a 'connection' between two machines. The most important implementation is the
@@ -161,4 +162,10 @@ public interface Connection {
      * @see #close(String, Throwable)
      */
     Throwable getCloseCause();
+
+    /**
+     * Returns attributes of Channel this connection belongs to.
+     * @return {@link com.hazelcast.internal.networking.Channel#attributeMap()} or {@code null} if there is no channel.
+     */
+    ConcurrentMap attributeMap();
 }

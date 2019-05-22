@@ -18,6 +18,8 @@ package com.hazelcast.internal.ascii;
 
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.ascii.memcache.Stats;
+import com.hazelcast.nio.Connection;
+import com.hazelcast.nio.tcp.TcpIpConnection;
 
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +33,7 @@ public interface TextCommandService {
 
     Object poll(String queueName);
 
-    void processRequest(TextCommand command);
+    void processRequest(TextCommand command, Connection connection);
 
     void sendResponse(TextCommand textCommand);
 

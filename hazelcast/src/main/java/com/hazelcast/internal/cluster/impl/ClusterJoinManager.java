@@ -252,7 +252,7 @@ public class ClusterJoinManager {
                 return;
             }
 
-            if (!authenticate(joinRequest)) {
+            if (!authenticate(joinRequest, connection)) {
                 return;
             }
 
@@ -349,10 +349,10 @@ public class ClusterJoinManager {
         recentlyJoinedMemberUuids.values().removeIf(joinTime -> (currentTime - joinTime) >= staleJoinPreventionDuration);
     }
 
-    private boolean authenticate(JoinRequest joinRequest) {
+    private boolean authenticate(JoinRequest joinRequest, Connection connection) {
         if (!joiningMembers.containsKey(joinRequest.getAddress())) {
             try {
-                secureLogin(joinRequest);
+                secureLogin(joinRequest, connection);
             } catch (Exception e) {
                 ILogger securityLogger = node.loggingService.getLogger("com.hazelcast.security");
                 nodeEngine.getOperationService().send(new AuthenticationFailureOp(), joinRequest.getAddress());
@@ -363,14 +363,15 @@ public class ClusterJoinManager {
         return true;
     }
 
-    private void secureLogin(JoinRequest joinRequest) {
+    private void secureLogin(JoinRequest joinRequest, Connection connection) {
         if (node.securityContext != null) {
             Credentials credentials = joinRequest.getCredentials();
             if (credentials == null) {
                 throw new SecurityException("Expecting security credentials, but credentials could not be found in join request");
             }
             try {
-                LoginContext loginContext = node.securityContext.createMemberLoginContext(credentials);
+                LoginContext loginContext = node.securityContext.createMemberLoginContext(credentials,
+                        connection.attributeMap());
                 loginContext.login();
             } catch (LoginException e) {
                 throw new SecurityException(format("Authentication has failed for %s@%s, cause: %s",

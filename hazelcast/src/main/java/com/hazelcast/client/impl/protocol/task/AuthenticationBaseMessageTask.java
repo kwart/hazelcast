@@ -157,7 +157,7 @@ public abstract class AuthenticationBaseMessageTask<P> extends AbstractStableClu
         Connection connection = endpoint.getConnection();
         credentials.setEndpoint(connection.getInetAddress().getHostAddress());
         try {
-            LoginContext lc = securityContext.createClientLoginContext(credentials);
+            LoginContext lc = securityContext.createClientLoginContext(credentials, connection.attributeMap());
             lc.login();
             endpoint.setLoginContext(lc);
             return AUTHENTICATED;

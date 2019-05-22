@@ -39,6 +39,7 @@ import com.hazelcast.internal.ascii.rest.HttpPostCommandProcessor;
 import com.hazelcast.internal.ascii.rest.RestValue;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.AggregateEndpointManager;
+import com.hazelcast.nio.Connection;
 import com.hazelcast.nio.EndpointManager;
 import com.hazelcast.nio.NetworkingService;
 import com.hazelcast.nio.ascii.TextEncoder;
@@ -235,9 +236,9 @@ public class TextCommandServiceImpl implements TextCommandService {
     }
 
     @Override
-    public void processRequest(TextCommand command) {
+    public void processRequest(TextCommand command, Connection connection) {
         startResponseThreadIfNotRunning();
-        node.nodeEngine.getExecutionService().execute("hz:text", new CommandExecutor(command));
+        node.nodeEngine.getExecutionService().execute("hz:text", new CommandExecutor(command, connection));
     }
 
     private void startResponseThreadIfNotRunning() {
@@ -378,9 +379,11 @@ public class TextCommandServiceImpl implements TextCommandService {
 
     class CommandExecutor implements Runnable {
         final TextCommand command;
+        private final Connection connection;
 
-        CommandExecutor(TextCommand command) {
+        CommandExecutor(TextCommand command, Connection connection) {
             this.command = command;
+            this.connection = connection;
         }
 
         @Override
@@ -388,7 +391,7 @@ public class TextCommandServiceImpl implements TextCommandService {
             try {
                 TextCommandConstants.TextCommandType type = command.getType();
                 TextCommandProcessor textCommandProcessor = textCommandProcessors[type.getValue()];
-                textCommandProcessor.handle(command);
+                textCommandProcessor.handle(command, connection);
             } catch (Throwable e) {
                 logger.warning(e);
             }

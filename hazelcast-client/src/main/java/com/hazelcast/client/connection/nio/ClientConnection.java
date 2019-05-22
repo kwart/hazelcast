@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.CancelledKeyException;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -56,6 +57,7 @@ public class ClientConnection implements Connection {
     private final HazelcastClientInstanceImpl client;
     private final long startTime = System.currentTimeMillis();
     private final Consumer<ClientMessage> responseHandler;
+    private final ConcurrentMap attributeMap;
 
     private volatile Address remoteEndpoint;
     private volatile boolean isAuthenticatedAsOwner;
@@ -72,7 +74,8 @@ public class ClientConnection implements Connection {
         this.connectionManager = (ClientConnectionManagerImpl) client.getConnectionManager();
         this.lifecycleService = client.getLifecycleService();
         this.channel = channel;
-        channel.attributeMap().put(ClientConnection.class, this);
+        this.attributeMap = channel.attributeMap();
+        attributeMap.put(ClientConnection.class, this);
         this.connectionId = connectionId;
         this.logger = client.getLoggingService().getLogger(ClientConnection.class);
     }
@@ -84,6 +87,7 @@ public class ClientConnection implements Connection {
         this.lifecycleService = client.getLifecycleService();
         this.connectionId = connectionId;
         this.channel = null;
+        this.attributeMap = null;
         this.logger = client.getLoggingService().getLogger(ClientConnection.class);
     }
 
@@ -290,5 +294,10 @@ public class ClientConnection implements Connection {
 
     public String getConnectedServerVersion() {
         return connectedServerVersion;
+    }
+
+    @Override
+    public ConcurrentMap attributeMap() {
+        return attributeMap;
     }
 }

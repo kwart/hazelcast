@@ -17,6 +17,7 @@
 package com.hazelcast.security;
 
 import com.hazelcast.config.PermissionConfig;
+import com.hazelcast.nio.Connection;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
@@ -25,6 +26,7 @@ import java.security.AccessControlException;
 import java.security.Permission;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * SecurityContext is responsible for managing lifecycle of security object such as
@@ -40,7 +42,7 @@ public interface SecurityContext {
      * @return {@link LoginContext}
      * @throws LoginException
      */
-    LoginContext createMemberLoginContext(Credentials credentials) throws LoginException;
+    LoginContext createMemberLoginContext(Credentials credentials, ConcurrentMap attributeMap) throws LoginException;
 
     /**
      * Creates client {@link LoginContext}.
@@ -49,7 +51,7 @@ public interface SecurityContext {
      * @return {@link LoginContext}
      * @throws LoginException
      */
-    LoginContext createClientLoginContext(Credentials credentials) throws LoginException;
+    LoginContext createClientLoginContext(Credentials credentials, ConcurrentMap attributeMap) throws LoginException;
 
     /**
      * Returns current {@link ICredentialsFactory}.

@@ -18,6 +18,8 @@ package com.hazelcast.internal.ascii.rest;
 
 import com.hazelcast.internal.ascii.AbstractTextCommand;
 import com.hazelcast.internal.ascii.TextCommandConstants;
+import com.hazelcast.nio.Connection;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.nio.ByteBuffer;
@@ -54,13 +56,11 @@ public abstract class HttpCommand extends AbstractTextCommand {
     protected ByteBuffer response;
     protected boolean nextLine;
 
-
     public HttpCommand(TextCommandConstants.TextCommandType type, String uri) {
         super(type);
         this.uri = uri;
         // the command line was parsed already, let's start with clear next line
         this.nextLine = true;
-
     }
 
     @Override

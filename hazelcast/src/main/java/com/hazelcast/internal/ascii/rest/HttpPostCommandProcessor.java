@@ -29,6 +29,7 @@ import com.hazelcast.internal.json.Json;
 import com.hazelcast.internal.management.ManagementCenterService;
 import com.hazelcast.internal.management.dto.WanReplicationConfigDTO;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.nio.Connection;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.UsernamePasswordCredentials;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -65,7 +66,7 @@ public class HttpPostCommandProcessor extends HttpCommandProcessor<HttpPostComma
 
     @Override
     @SuppressWarnings("checkstyle:npathcomplexity")
-    public void handle(HttpPostCommand command) {
+    public void handle(HttpPostCommand command, Connection connection) {
         boolean sendResponse = true;
         try {
             String uri = command.getURI();
@@ -855,7 +856,7 @@ public class HttpPostCommandProcessor extends HttpCommandProcessor<HttpPostComma
      * Checks if the request is valid. If Hazelcast Security is not enabled, then only the given group name is compared to
      * configuration. Otherwise member JAAS authentication (member login module stack) is used to authenticate the command.
      */
-    private boolean authenticate(HttpPostCommand command, final String groupName, final String pass)
+    private boolean authenticate(HttpPostCommand command, String groupName, String pass)
             throws UnsupportedEncodingException {
         String decodedName = URLDecoder.decode(groupName, "UTF-8");
         SecurityContext securityContext = textCommandService.getNode().getNodeExtension().getSecurityContext();
@@ -873,7 +874,7 @@ public class HttpPostCommandProcessor extends HttpCommandProcessor<HttpPostComma
         String decodedPass = URLDecoder.decode(pass, "UTF-8");
         UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(groupName, decodedPass);
         try {
-            LoginContext lc = securityContext.createMemberLoginContext(credentials);
+            LoginContext lc = securityContext.createMemberLoginContext(credentials, command.getConnection().attributeMap());
             lc.login();
         } catch (LoginException e) {
             return false;
@@ -889,5 +890,10 @@ public class HttpPostCommandProcessor extends HttpCommandProcessor<HttpPostComma
     @Override
     public void handleRejection(HttpPostCommand command) {
         handle(command);
+    }
+
+    @Override
+    public void handle(HttpPostCommand request) {
+        handle(request, null);
     }
 }
