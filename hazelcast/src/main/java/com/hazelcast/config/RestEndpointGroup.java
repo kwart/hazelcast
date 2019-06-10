@@ -28,32 +28,34 @@ public enum RestEndpointGroup {
     /**
      * Group of operations for retrieving cluster state and its version.
      */
-    CLUSTER_READ(true),
+    CLUSTER_READ(true, true),
     /**
      * Operations which changes cluster or node state or their configurations.
      */
-    CLUSTER_WRITE(false),
+    CLUSTER_WRITE(false, true),
     /**
      * Group of endpoints for HTTP health checking.
      */
-    HEALTH_CHECK(true),
+    HEALTH_CHECK(true, true),
     /**
      * Group of HTTP REST APIs related to Hot Restart feature.
      */
-    HOT_RESTART(false),
+    HOT_RESTART(false, true),
     /**
      * Group of HTTP REST APIs related to WAN Replication feature.
      */
-    WAN(false),
+    WAN(false, true),
     /**
      * Group of HTTP REST APIs for data manipulation in the cluster (e.g. IMap and IQueue operations).
      */
-    DATA(false);
+    DATA(false, false);
 
     private final boolean enabledByDefault;
+    private final boolean managementAction;
 
-    RestEndpointGroup(boolean enabledByDefault) {
+    RestEndpointGroup(boolean enabledByDefault, boolean managementAction) {
         this.enabledByDefault = enabledByDefault;
+        this.managementAction = managementAction;
     }
 
     /**
@@ -61,5 +63,13 @@ public enum RestEndpointGroup {
      */
     public boolean isEnabledByDefault() {
         return enabledByDefault;
+    }
+
+    /**
+     * Returns {@code true} if REST endpoints in this group are control management operations. The {@code false} value means,
+     * the group holds data (or client) actions.
+     */
+    public boolean isManagementAction() {
+        return managementAction;
     }
 }

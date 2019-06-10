@@ -26,6 +26,7 @@ import com.hazelcast.internal.ascii.TextCommandService;
 import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.OutboundHandler;
+import com.hazelcast.internal.restng.HttpProcessor;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuilder;
 import com.hazelcast.logging.ILogger;
@@ -352,5 +353,10 @@ public class MockIOService implements IOService {
     @Override
     public MemcacheProtocolConfig getMemcacheProtocolConfig() {
         return new MemcacheProtocolConfig();
+    }
+
+    @Override
+    public HttpProcessor getHttpProcessor() {
+        return null;
     }
 }

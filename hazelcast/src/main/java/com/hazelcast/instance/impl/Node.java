@@ -26,6 +26,7 @@ import com.hazelcast.cluster.Member;
 import com.hazelcast.cluster.MembershipListener;
 import com.hazelcast.cluster.impl.MemberImpl;
 import com.hazelcast.cluster.impl.TcpIpJoiner;
+import com.hazelcast.config.AdvancedNetworkConfig;
 import com.hazelcast.config.AliasedDiscoveryConfigUtils;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.DiscoveryConfig;
@@ -36,6 +37,9 @@ import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.config.MemberAttributeConfig;
+import com.hazelcast.config.RestApiConfig;
+import com.hazelcast.config.RestEndpointGroup;
+import com.hazelcast.config.RestServerEndpointConfig;
 import com.hazelcast.config.UserCodeDeploymentConfig;
 import com.hazelcast.core.DistributedObjectListener;
 import com.hazelcast.core.HazelcastInstanceAware;
@@ -63,6 +67,7 @@ import com.hazelcast.internal.networking.ServerSocketRegistry;
 import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.internal.partition.impl.MigrationInterceptor;
+import com.hazelcast.internal.restng.HttpProcessor;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.usercodedeployment.UserCodeDeploymentClassLoader;
 import com.hazelcast.logging.ILogger;
@@ -98,6 +103,7 @@ import java.lang.reflect.Constructor;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -185,6 +191,8 @@ public class Node {
 
     private volatile NodeState state;
 
+    private final HttpProcessor httpProcessor;
+
     /**
      * Codebase version of Hazelcast being executed at this Node, as resolved by {@link BuildInfoProvider}.
      * For example, when running on hazelcast-3.8.jar, this would resolve to {@code Version.of(3,8,0)}.
@@ -261,6 +269,9 @@ public class Node {
             partitionService = new InternalPartitionServiceImpl(this);
             textCommandService = nodeExtension.createTextCommandService();
             multicastService = createMulticastService(addressPicker.getBindAddress(MEMBER), this, config, logger);
+
+            httpProcessor = HttpProcessor.create(this);
+
             joiner = nodeContext.createJoiner(this);
         } catch (Throwable e) {
             serverSocketRegistry.destroy();
@@ -892,6 +903,10 @@ public class Node {
         return getLocalMember().isLiteMember();
     }
 
+    public HttpProcessor getHttpProcessor() {
+        return httpProcessor;
+    }
+
     @Override
     public String toString() {
         return "Node[" + hazelcastInstance.getName() + "]";
@@ -925,5 +940,4 @@ public class Node {
                     + " The group password configuration will be removed completely in a future release.");
         }
     }
-
 }

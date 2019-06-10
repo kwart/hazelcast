@@ -20,6 +20,8 @@ import com.hazelcast.internal.ascii.TextProtocolsDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.util.StringUtil;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
@@ -38,6 +40,10 @@ public class RestValue implements IdentifiedDataSerializable {
     public RestValue(byte[] value, byte[] contentType) {
         this.value = value;
         this.contentType = contentType;
+    }
+
+    public RestValue(byte[] value, String contentType) {
+        this(value, StringUtil.stringToBytes(contentType));
     }
 
     @Override

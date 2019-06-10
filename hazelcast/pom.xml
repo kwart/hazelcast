@@ -469,5 +469,12 @@
             <version>2.1.4</version>
             <scope>test</scope>
         </dependency>
+        <!-- generate META-INF/services files from @MetaInf annotated classes during compilation -->
+        <dependency>
+            <groupId>org.kohsuke.metainf-services</groupId>
+            <artifactId>metainf-services</artifactId>
+            <version>1.8</version>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 </project>

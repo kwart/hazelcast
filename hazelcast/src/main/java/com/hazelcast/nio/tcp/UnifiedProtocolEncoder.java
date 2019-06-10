@@ -19,8 +19,10 @@ package com.hazelcast.nio.tcp;
 import com.hazelcast.client.impl.protocol.util.ClientMessageEncoder;
 import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.internal.networking.OutboundHandler;
+import com.hazelcast.internal.restng.HttpUtils;
 import com.hazelcast.internal.networking.HandlerStatus;
 import com.hazelcast.nio.IOService;
+import com.hazelcast.nio.ascii.HttpEncoder;
 import com.hazelcast.nio.ascii.TextEncoder;
 import com.hazelcast.spi.properties.HazelcastProperties;
 
@@ -112,6 +114,8 @@ public class UnifiedProtocolEncoder
             } else if (CLIENT_BINARY_NEW.equals(inboundProtocol)) {
                 // in case of a client, the member will not send the member protocol
                 initChannelForClient();
+            } else if (HttpUtils.startsAsHttpMethod(inboundProtocol)) {
+                initChannelForRest();
             } else {
                 // in case of a text-client, the member will not send the member protocol
                 initChannelForText();
@@ -149,6 +153,11 @@ public class UnifiedProtocolEncoder
                 .setOption(SO_SNDBUF, clientSndBuf());
 
         channel.outboundPipeline().replace(this, new ClientMessageEncoder());
+    }
+
+    private void initChannelForRest() {
+        channel.options().setOption(SO_SNDBUF, clientSndBuf());
+        channel.outboundPipeline().replace(this, new HttpEncoder());
     }
 
     private void initChannelForText() {

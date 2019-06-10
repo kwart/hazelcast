@@ -23,8 +23,11 @@ import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.internal.networking.ChannelOptions;
 import com.hazelcast.internal.networking.HandlerStatus;
 import com.hazelcast.internal.networking.InboundHandler;
+import com.hazelcast.internal.restng.HttpProcessor;
+import com.hazelcast.internal.restng.HttpUtils;
 import com.hazelcast.nio.ConnectionType;
 import com.hazelcast.nio.IOService;
+import com.hazelcast.nio.ascii.HttpDecoder;
 import com.hazelcast.nio.ascii.MemcacheTextDecoder;
 import com.hazelcast.nio.ascii.RestApiTextDecoder;
 import com.hazelcast.nio.ascii.TextDecoder;
@@ -90,6 +93,8 @@ public class UnifiedProtocolDecoder
                 initChannelForCluster();
             } else if (CLIENT_BINARY_NEW.equals(protocol)) {
                 initChannelForClient();
+            } else if (HttpUtils.startsAsHttpMethod(protocol)) {
+                initChannelForRest(protocol);
             } else if (RestApiTextDecoder.TEXT_PARSERS.isCommandPrefix(protocol)) {
                 RestApiConfig restApiConfig = ioService.getRestApiConfig();
                 if (!restApiConfig.isEnabledAndNotEmpty()) {
@@ -144,6 +149,18 @@ public class UnifiedProtocolDecoder
 
         TcpIpConnection connection = (TcpIpConnection) channel.attributeMap().get(TcpIpConnection.class);
         channel.inboundPipeline().replace(this, new ClientMessageDecoder(connection, ioService.getClientEngine()));
+    }
+
+    private void initChannelForRest(String protocol) {
+        ChannelOptions config = channel.options();
+        config.setOption(SO_RCVBUF, clientRcvBuf());
+
+        TcpIpConnection connection = (TcpIpConnection) channel.attributeMap().get(TcpIpConnection.class);
+        HttpDecoder decoder = new HttpDecoder(ioService.getHttpProcessor());
+        decoder.src(newByteBuffer(config.getOption(SO_RCVBUF), config.getOption(DIRECT_BUF)));
+        // we need to restore whatever is read
+        decoder.src().put(stringToBytes(protocol));
+        channel.inboundPipeline().replace(this, decoder);
     }
 
     private void initChannelForText(String protocol, boolean restApi) {

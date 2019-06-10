@@ -36,6 +36,7 @@ import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.OutboundHandler;
+import com.hazelcast.internal.restng.HttpProcessor;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.nio.tcp.TcpIpConnection;
@@ -402,5 +403,10 @@ public class NodeIOService implements IOService {
     @Override
     public MemcacheProtocolConfig getMemcacheProtocolConfig() {
         return memcacheProtocolConfig;
+    }
+
+    @Override
+    public HttpProcessor getHttpProcessor() {
+        return node.getHttpProcessor();
     }
 }

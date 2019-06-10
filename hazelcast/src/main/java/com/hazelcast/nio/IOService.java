@@ -25,6 +25,7 @@ import com.hazelcast.internal.ascii.TextCommandService;
 import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.OutboundHandler;
+import com.hazelcast.internal.restng.HttpProcessor;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.nio.tcp.TcpIpConnection;
@@ -115,4 +116,6 @@ public interface IOService {
     InboundHandler[] createInboundHandlers(EndpointQualifier qualifier, TcpIpConnection connection);
 
     OutboundHandler[] createOutboundHandlers(EndpointQualifier qualifier, TcpIpConnection connection);
+
+    HttpProcessor getHttpProcessor();
 }
