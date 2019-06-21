@@ -16,9 +16,12 @@
 
 package com.hazelcast.internal.restng;
 
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static com.hazelcast.util.StringUtil.bytesToString;
 import static com.hazelcast.util.StringUtil.stringToBytes;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -34,19 +37,19 @@ public final class HttpUtils {
     public static final char CR = '\r';
     public static final char LF = '\n';
     public static final String CR_LF = "\r\n";
-    
+
     public static final String CONTENT_LENGTH = "Content-Length";
     public static final String CONTENT_TYPE = "Content-Type";
     public static final String WWW_AUTHENTICATE = "WWW-Authenticate";
     public static final String AUTHORIZATION = "Authorization";
-    
+
     public static final String CONTENT_TYPE_PLAIN_TEXT = "text/plain";
     public static final String CONTENT_TYPE_JSON = "application/json";
     public static final String CONTENT_TYPE_OCTET_STREAM = "application/octet-stream";
 
     public static final String URI_BASE_MANCENTER="/hazelcast/rest/mancenter";
     public static final String URI_BASE_CLUSTER_MANAGEMENT = "/hazelcast/rest/management/cluster";
-    
+
     public static final byte[] EMPTY = new byte[0];
 
     public static String trimQueryParams(String uri) {
@@ -101,6 +104,24 @@ public final class HttpUtils {
         byte[] body = req.body();
         return body == null ? null : bytesToString(body);
     }
+
+    public static String[] getUrlDecodedBodyParams(HttpRequest req) {
+        String body = bodyAsString(req);
+        if (body == null) {
+            return null;
+        }
+        String[] decoded = body.split("&");
+        for (int i = 0; i < decoded.length; i++) {
+            try {
+                decoded[i] = URLDecoder.decode(decoded[i], "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                // Really? UTF-8?
+                throw rethrow(e);
+            }
+        }
+        return decoded;
+    }
+
     /**
      * Returns an {@link HttpProtocol} instance or {@code null} if the given request doesn't use one of HTTP/1.0 or HTTP/1.1
      * protocols.
@@ -209,4 +230,5 @@ public final class HttpUtils {
 
     private HttpUtils() {
     }
+
 }
