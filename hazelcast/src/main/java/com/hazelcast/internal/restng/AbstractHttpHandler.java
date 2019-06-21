@@ -2,7 +2,7 @@ package com.hazelcast.internal.restng;
 
 import static com.hazelcast.internal.restng.HttpUtils.getHttpMethod;
 
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.restng.HttpUtils.HttpMethod;
 import com.hazelcast.internal.restng.HttpUtils.WellKnownHttpStatus;
 

@@ -7,16 +7,16 @@ import com.hazelcast.internal.restng.HttpHandler;
 import com.hazelcast.internal.restng.HttpHandlerFactory;
 
 @MetaInfServices
-public class MapHttpHandlerFactory implements HttpHandlerFactory {
+public class QueueHttpHandlerFactory implements HttpHandlerFactory {
 
     @Override
     public String uri() {
-        return "/hazelcast/rest/maps";
+        return "/hazelcast/rest/queues";
     }
 
     @Override
     public HttpHandler create(Node node) {
-        return new MapHttpHandler(node, uri());
+        return new QueueHttpHandler(node, uri());
     }
 
     @Override

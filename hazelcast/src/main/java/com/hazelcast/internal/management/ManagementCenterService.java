@@ -131,7 +131,7 @@ public class ManagementCenterService {
         this.instance = instance;
         this.logger = instance.node.getLogger(ManagementCenterService.class);
         this.managementCenterConfig = getManagementCenterConfig();
-        this.managementCenterUrl = getManagementCenterUrl();
+        this.managementCenterUrl = managementCenterConfig.getUrl();
         this.commandHandler = new ConsoleCommandHandler(instance);
         this.taskPollThread = new TaskPollThread();
         this.stateSendThread = new StateSendThread();
@@ -146,8 +146,8 @@ public class ManagementCenterService {
         }
     }
 
-    private String getManagementCenterUrl() {
-        return managementCenterConfig.getUrl();
+    public String getManagementCenterUrl() {
+        return managementCenterUrl;
     }
 
     private ManagementCenterConfig getManagementCenterConfig() {

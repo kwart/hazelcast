@@ -1,6 +1,6 @@
 package com.hazelcast.internal.restng;
 
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 
 public interface HttpHandlerFactory {
     String uri();

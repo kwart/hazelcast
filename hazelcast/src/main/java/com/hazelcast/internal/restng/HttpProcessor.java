@@ -19,7 +19,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.RestApiConfig;
 import com.hazelcast.config.RestEndpointGroup;
 import com.hazelcast.config.RestServerEndpointConfig;
-import com.hazelcast.instance.Node;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.impl.ConfigMismatchException;
 import com.hazelcast.internal.networking.Channel;
 import com.hazelcast.internal.restng.HttpUtils.WellKnownHttpStatus;

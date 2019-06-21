@@ -16,9 +16,9 @@
 
 package com.hazelcast.internal.restng;
 
+import static com.hazelcast.util.StringUtil.bytesToString;
 import static com.hazelcast.util.StringUtil.stringToBytes;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -44,6 +44,9 @@ public final class HttpUtils {
     public static final String CONTENT_TYPE_JSON = "application/json";
     public static final String CONTENT_TYPE_OCTET_STREAM = "application/octet-stream";
 
+    public static final String URI_BASE_MANCENTER="/hazelcast/rest/mancenter";
+    public static final String URI_BASE_CLUSTER_MANAGEMENT = "/hazelcast/rest/management/cluster";
+    
     public static final byte[] EMPTY = new byte[0];
 
     public static String trimQueryParams(String uri) {
@@ -73,6 +76,31 @@ public final class HttpUtils {
         return null;
     }
 
+    public static HttpResponse createOkTextResponse(HttpRequest req, String body) {
+        DefaultHttpResponse response = new DefaultHttpResponse(req, WellKnownHttpStatus.OK_200,
+                body != null ? stringToBytes(body) : null);
+        response.headers().add(new DefaultHttpHeader(CONTENT_TYPE, CONTENT_TYPE_PLAIN_TEXT));
+        return response;
+    }
+
+    public static HttpResponse createServerErrorTextResponse(HttpRequest req, String body) {
+        DefaultHttpResponse response = new DefaultHttpResponse(req, WellKnownHttpStatus.INTERNAL_SERVER_ERROR_500,
+                body != null ? stringToBytes(body) : null);
+        response.headers().add(new DefaultHttpHeader(CONTENT_TYPE, CONTENT_TYPE_PLAIN_TEXT));
+        return response;
+    }
+
+    public static HttpResponse createBadRequestTextResponse(HttpRequest req, String body) {
+        DefaultHttpResponse response = new DefaultHttpResponse(req, WellKnownHttpStatus.BAD_REQUEST_400,
+                body != null ? stringToBytes(body) : null);
+        response.headers().add(new DefaultHttpHeader(CONTENT_TYPE, CONTENT_TYPE_PLAIN_TEXT));
+        return response;
+    }
+
+    public static String bodyAsString(HttpRequest req) {
+        byte[] body = req.body();
+        return body == null ? null : bytesToString(body);
+    }
     /**
      * Returns an {@link HttpProtocol} instance or {@code null} if the given request doesn't use one of HTTP/1.0 or HTTP/1.1
      * protocols.
