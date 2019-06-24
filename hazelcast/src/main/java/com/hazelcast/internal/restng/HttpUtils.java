@@ -26,6 +26,8 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.hazelcast.internal.json.JsonArray;
+import com.hazelcast.internal.json.JsonObject;
 import com.hazelcast.nio.Protocols;
 
 public final class HttpUtils {
@@ -43,12 +45,14 @@ public final class HttpUtils {
     public static final String WWW_AUTHENTICATE = "WWW-Authenticate";
     public static final String AUTHORIZATION = "Authorization";
 
-    public static final String CONTENT_TYPE_PLAIN_TEXT = "text/plain";
-    public static final String CONTENT_TYPE_JSON = "application/json";
+    public static final String CONTENT_TYPE_PLAIN_TEXT = "text/plain; charset=utf-8";
+    public static final String CONTENT_TYPE_JSON = "application/json; charset=utf-8";
     public static final String CONTENT_TYPE_OCTET_STREAM = "application/octet-stream";
 
-    public static final String URI_BASE_MANCENTER="/hazelcast/rest/mancenter";
-    public static final String URI_BASE_CLUSTER_MANAGEMENT = "/hazelcast/rest/management/cluster";
+    public static final String URI_BASE_REST = "/hazelcast/rest";
+    public static final String URI_BASE_CP_SUBSYSTEM = URI_BASE_REST + "/cp-subsystem";
+    public static final String URI_BASE_MANCENTER = URI_BASE_REST + "/mancenter";
+    public static final String URI_BASE_CLUSTER_MANAGEMENT = URI_BASE_REST + "/management/cluster";
 
     public static final byte[] EMPTY = new byte[0];
 
@@ -97,6 +101,13 @@ public final class HttpUtils {
         DefaultHttpResponse response = new DefaultHttpResponse(req, WellKnownHttpStatus.BAD_REQUEST_400,
                 body != null ? stringToBytes(body) : null);
         response.headers().add(new DefaultHttpHeader(CONTENT_TYPE, CONTENT_TYPE_PLAIN_TEXT));
+        return response;
+    }
+
+    public static HttpResponse createJsonResponse(HttpRequest req, JsonObject body) {
+        DefaultHttpResponse response = new DefaultHttpResponse(req, WellKnownHttpStatus.OK_200,
+                (body != null ? stringToBytes(body.toString()) : null));
+        response.headers().add(new DefaultHttpHeader(CONTENT_TYPE, CONTENT_TYPE_JSON));
         return response;
     }
 

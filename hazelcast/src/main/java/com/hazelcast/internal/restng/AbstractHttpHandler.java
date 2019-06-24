@@ -5,15 +5,18 @@ import static com.hazelcast.internal.restng.HttpUtils.getHttpMethod;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.restng.HttpUtils.HttpMethod;
 import com.hazelcast.internal.restng.HttpUtils.WellKnownHttpStatus;
+import com.hazelcast.logging.ILogger;
 
 public abstract class AbstractHttpHandler implements HttpHandler {
 
+    protected final ILogger logger;
     protected final String factoryUri;
     protected final Node node;
 
     public AbstractHttpHandler(Node node, String factoryUri) {
         this.node = node;
         this.factoryUri = factoryUri;
+        logger = node.getLogger(getClass());
     }
 
     @Override
