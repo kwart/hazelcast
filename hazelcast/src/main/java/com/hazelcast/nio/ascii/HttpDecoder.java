@@ -84,7 +84,7 @@ public class HttpDecoder extends InboundHandler<ByteBuffer, Void> {
     public HandlerStatus onRead() throws Exception {
         src.flip();
         try {
-            while (src.hasRemaining() || ! request.processingDone()) {
+            while (src.hasRemaining() || (request!=null && ! request.processingDone())) {
                 switch (currentState) {
                     case SKIP_CONTROL_CHARS: {
                         if (!skipControlCharacters()) {
