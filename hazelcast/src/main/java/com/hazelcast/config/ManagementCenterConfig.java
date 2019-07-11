@@ -29,7 +29,7 @@ public class ManagementCenterConfig {
 
     private boolean enabled;
 
-    private boolean scriptingEnabled = ! BuildInfoProvider.getBuildInfo().isEnterprise();
+    private boolean scriptingEnabled = false;
 
     private String url;
 

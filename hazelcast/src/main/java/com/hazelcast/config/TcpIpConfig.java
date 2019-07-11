@@ -36,7 +36,7 @@ public class TcpIpConfig {
 
     private int connectionTimeoutSeconds = CONNECTION_TIMEOUT_SEC;
 
-    private boolean enabled;
+    private boolean enabled = true;
 
     private List<String> members = new ArrayList<String>();
 

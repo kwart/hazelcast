@@ -200,7 +200,7 @@ class DefaultAddressPicker
         if (tcpIpConfig.isEnabled()) {
             logger.warning("Could not find a matching address to start with! Picking one of non-loopback addresses.");
         }
-        return pickMatchingAddress(null);
+        return pickLoopbackAddress(null);
     }
 
     private List<InterfaceDefinition> getInterfaces() {

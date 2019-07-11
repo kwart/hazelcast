@@ -317,7 +317,7 @@ public final class GroupProperty {
             InvocationBuilder.DEFAULT_TRY_PAUSE_MILLIS, MILLISECONDS);
 
     public static final HazelcastProperty SOCKET_BIND_ANY
-            = new HazelcastProperty("hazelcast.socket.bind.any", true);
+            = new HazelcastProperty("hazelcast.socket.bind.any", false);
     public static final HazelcastProperty SOCKET_SERVER_BIND_ANY
             = new HazelcastProperty("hazelcast.socket.server.bind.any", SOCKET_BIND_ANY);
     public static final HazelcastProperty SOCKET_CLIENT_BIND_ANY

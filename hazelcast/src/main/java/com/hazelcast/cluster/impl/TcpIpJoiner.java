@@ -416,6 +416,9 @@ public class TcpIpJoiner extends AbstractJoiner {
             String[] members = member.split("[,; ]");
             Collections.addAll(possibleMembers, members);
         }
+        if (possibleMembers.isEmpty()) {
+            possibleMembers.add("127.0.0.1");
+        }
         return possibleMembers;
     }
 
