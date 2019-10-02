@@ -196,6 +196,7 @@ final class BindHandler {
                 if (logger.isLoggable(Level.FINEST)) {
                     logger.finest("Registering connection " + connection + " to address alias " + remoteAddressAlias);
                 }
+                new Exception(Thread.currentThread().getName() + " " + remoteAddressAlias + " : " + connection).printStackTrace();;
                 tcpIpEndpointManager.connectionsMap.putIfAbsent(remoteAddressAlias, connection);
             }
         }

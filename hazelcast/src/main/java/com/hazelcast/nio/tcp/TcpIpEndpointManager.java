@@ -178,6 +178,8 @@ public class TcpIpEndpointManager
 
     @Override
     public TcpIpConnection getOrConnect(final Address address, final boolean silent) {
+        new Exception(Thread.currentThread().getName() + " getOrConnect " + address + "\n active: " + activeConnections
+                + "\n in progress: " + connectionsInProgress).printStackTrace();
         TcpIpConnection connection = connectionsMap.get(address);
         if (connection == null && networkingService.isLive()) {
             if (connectionsInProgress.add(address)) {
