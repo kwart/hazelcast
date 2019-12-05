@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -55,6 +56,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.internal.util.counters.MwCounter.newMwCounter;
@@ -194,9 +196,9 @@ public class TcpIpEndpointManager
 
     @Override
     public TcpIpConnection getOrConnect(final Address address, final boolean silent) {
-        new Exception(Thread.currentThread().getName() + " getOrConnect " + address).printStackTrace();
         TcpIpConnection connection = connectionsMap.get(address);
         if (connection == null && networkingService.isLive()) {
+            new Exception(Thread.currentThread().getName() + " getOrConnect " + address).printStackTrace();
             if (connectionsInProgress.add(address)) {
                 connector.asyncConnect(address, silent);
             }
@@ -204,8 +206,19 @@ public class TcpIpEndpointManager
         return connection;
     }
 
+    public boolean registerAlias(final Address address, final TcpIpConnection connection) {
+        if (address.equals(ioService.getThisAddress()) || !connection.isAlive()) {
+            new Exception(Thread.currentThread().getName() + " NOTREGISTERING " + address).printStackTrace();
+            return false;
+        }
+        new Exception(Thread.currentThread().getName() + " registering " + address).printStackTrace();
+        return connectionsMap.putIfAbsent(address, connection) == null;
+    }
+
+
     @Override
     public synchronized boolean registerConnection(final Address remoteEndPoint, final TcpIpConnection connection) {
+        new Exception(Thread.currentThread().getName() + " registerConnection " + remoteEndPoint).printStackTrace();
         try {
             if (remoteEndPoint.equals(ioService.getThisAddress())) {
                 return false;
@@ -509,6 +522,12 @@ public class TcpIpEndpointManager
 
     private interface ChannelBytesSupplier {
         long get(Channel channel);
+    }
+
+    public Collection<Address> getAliases(Address address) {
+        Connection con = connectionsMap.get(address);
+        return connectionsMap.entrySet().stream().filter(e -> e.getValue() == con).map(e -> e.getKey())
+                .collect(Collectors.toSet());
     }
 
 }

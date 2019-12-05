@@ -170,6 +170,12 @@ public abstract class AbstractOutOfMemoryHandlerTest extends HazelcastTestSuppor
                 throw new OutOfMemoryError();
             }
         }
+
+        @Override
+        public Collection<Address> getAliases(Address address) {
+            // TODO Auto-generated method stub
+            return null;
+        }
     }
 
 }

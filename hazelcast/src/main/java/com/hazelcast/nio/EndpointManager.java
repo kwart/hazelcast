@@ -110,4 +110,6 @@ public interface EndpointManager<T extends Connection>
      */
     boolean transmit(Packet packet, Address target);
 
+    Collection<Address> getAliases(Address address);
+
 }

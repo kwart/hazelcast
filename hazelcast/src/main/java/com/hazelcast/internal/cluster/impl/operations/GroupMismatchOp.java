@@ -32,6 +32,9 @@ public class GroupMismatchOp extends AbstractClusterOperation {
         NodeEngineImpl nodeEngine = (NodeEngineImpl) getNodeEngine();
         Connection connection = getConnection();
 
+        Node node = nodeEngine.getNode();
+        node.getJoiner().blacklist(getCallerAddress(), true);
+
         String message = "Node could not join cluster at node: " + connection.getEndPoint()
                 + " Cause: the target cluster has a different group-name";
 
@@ -40,8 +43,6 @@ public class GroupMismatchOp extends AbstractClusterOperation {
         ILogger logger = nodeEngine.getLogger("com.hazelcast.cluster");
         logger.warning(message);
 
-        Node node = nodeEngine.getNode();
-        node.getJoiner().blacklist(getCallerAddress(), true);
     }
 
     @Override

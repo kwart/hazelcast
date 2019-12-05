@@ -122,5 +122,11 @@ public class Invocation_EndpointManagerTest
         public void accept(Object o) {
 
         }
+
+        @Override
+        public Collection<Address> getAliases(Address address) {
+            // TODO Auto-generated method stub
+            return null;
+        }
     }
 }

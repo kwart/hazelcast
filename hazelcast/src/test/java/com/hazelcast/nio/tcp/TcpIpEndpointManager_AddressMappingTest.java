@@ -56,7 +56,7 @@ public class TcpIpEndpointManager_AddressMappingTest {
         assumeLocalhostResolvesTo_127_0_0_1();
         HazelcastInstance hz1 = newMember("127.0.0.1");
         try {
-            HazelcastInstance hz2 = newMember("192.168.1.105");
+            HazelcastInstance hz2 = newMember("192.168.1.13");
             assertClusterSize(1, hz1, hz2);
         } finally {
             Hazelcast.shutdownAll();
@@ -64,7 +64,10 @@ public class TcpIpEndpointManager_AddressMappingTest {
     }
 
     private static HazelcastInstance newMember(String hostname) {
-        Config config = smallInstanceConfig().setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "5");
+        Config config = smallInstanceConfig()
+                .setProperty(GroupProperty.MAX_JOIN_SECONDS.getName(), "5")
+//                .setProperty(GroupProperty.BIND_SPOOFING_CHECKS.getName(), "true")
+                ;
         config.getGroupConfig().setName(hostname);
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);

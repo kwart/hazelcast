@@ -87,4 +87,10 @@ class ClientViewUnifiedEndpointManager
     public String toString() {
         return unifiedEndpointManager.toString();
     }
+
+    @Override
+    public Collection<Address> getAliases(Address address) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

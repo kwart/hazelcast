@@ -272,6 +272,12 @@ class MockNetworkingService
             return false;
         }
 
+        @Override
+        public Collection<Address> getAliases(Address address) {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
         private class MockConnLifecycleListener
                 implements ConnectionLifecycleListener<MockConnection> {
 

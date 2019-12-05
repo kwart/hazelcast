@@ -96,4 +96,10 @@ class MemberViewUnifiedEndpointManager
     int getConnectionListenersCount() {
         return unifiedEndpointManager.getConnectionListenersCount();
     }
+
+    @Override
+    public Collection<Address> getAliases(Address address) {
+        return unifiedEndpointManager.getAliases(address);
+    }
+
 }

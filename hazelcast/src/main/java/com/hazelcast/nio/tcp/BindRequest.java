@@ -39,13 +39,15 @@ public class BindRequest {
     private final TcpIpConnection connection;
     private final Address remoteEndPoint;
     private final boolean reply;
+    private final Address originalAddress;
 
-    BindRequest(ILogger logger, IOService ioService, TcpIpConnection connection, Address remoteEndPoint, boolean reply) {
+    BindRequest(ILogger logger, IOService ioService, TcpIpConnection connection, Address remoteEndPoint, boolean reply, Address originalAddress) {
         this.logger = logger;
         this.ioService = ioService;
         this.connection = connection;
         this.remoteEndPoint = remoteEndPoint;
         this.reply = reply;
+        this.originalAddress = originalAddress;
     }
 
     public void send() {
@@ -57,7 +59,12 @@ public class BindRequest {
             logger.finest("Sending bind packet to " + remoteEndPoint);
         }
         // since 3.12, send the new bind message followed by the pre-3.12 BindMessage
-        ExtendedBindMessage bind = new ExtendedBindMessage((byte) 1, getConfiguredLocalAddresses(), remoteEndPoint, reply);
+        Map<ProtocolType, Collection<Address>> configuredLocalAddresses = getConfiguredLocalAddresses();
+        Collection<Address> memberAddrs = configuredLocalAddresses.get(ProtocolType.MEMBER);
+        if (originalAddress != null && memberAddrs != null) {
+            memberAddrs.add(originalAddress);
+        }
+        ExtendedBindMessage bind = new ExtendedBindMessage((byte) 1, configuredLocalAddresses, remoteEndPoint, reply);
         byte[] bytes = ioService.getSerializationService().toBytes(bind);
         // using one of the undefined packet types we can avoid old members
         // logging a serialization exception because they cannot deserialize the

@@ -28,6 +28,7 @@ import com.hazelcast.internal.cluster.impl.SplitBrainJoinMessage.SplitBrainMerge
 import com.hazelcast.internal.cluster.impl.operations.JoinMastershipClaimOp;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.Connection;
+import com.hazelcast.nio.tcp.TcpIpEndpointManager;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.AddressUtil;
@@ -133,6 +134,15 @@ public class TcpIpJoiner extends AbstractJoiner {
         }
     }
 
+    @Override
+    public void blacklist(Address address, boolean permanent) {
+        super.blacklist(address, permanent);
+        for (Address alias:node.getEndpointManager(MEMBER).getAliases(address)) {
+            new Exception(Thread.currentThread().getName() + " blacklisting " + alias).printStackTrace();
+            super.blacklist(alias, permanent);
+        }
+    }
+
     private void joinViaPossibleMembers() {
         try {
             Collection<Address> possibleAddresses = getPossibleAddressesForInitialJoin();
@@ -147,7 +157,10 @@ public class TcpIpJoiner extends AbstractJoiner {
                     return;
                 }
 
-                if (isAllBlacklisted(possibleAddresses)) {
+                boolean allBlacklisted = isAllBlacklisted(possibleAddresses);
+                logger.severe(
+                        "All blacklisted: " + allBlacklisted + ", "+possibleAddresses);
+                if (allBlacklisted) {
                     logger.fine(
                             "This node will assume master role since none of the possible members accepted join request.");
                     clusterJoinManager.setThisMemberAsMaster();
@@ -169,6 +182,9 @@ public class TcpIpJoiner extends AbstractJoiner {
         boolean consensus = false;
         if (isThisNodeMasterCandidate(addresses)) {
             consensus = claimMastership(addresses);
+            logger.severe(
+                    "Claim mastersip: " + consensus);
+
             if (consensus) {
                 if (logger.isFineEnabled()) {
                     Set<Address> votingEndpoints = new HashSet<Address>(addresses);

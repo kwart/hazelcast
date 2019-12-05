@@ -77,6 +77,7 @@ final class BindHandler {
     }
 
     private synchronized boolean bind(TcpIpConnection connection, ExtendedBindMessage bindMessage) {
+        new Exception(Thread.currentThread().getName() + " binding " + bindMessage).printStackTrace();
         if (logger.isFinestEnabled()) {
             logger.finest("Extended binding " + connection + ", complete message is " + bindMessage);
         }
@@ -108,22 +109,26 @@ final class BindHandler {
             // address of the target member will be set correctly in TcpIpConnection.setEndpoint.
             if (mustRegisterRemoteSocketAddress) {
                 allAliases.add(new Address(connection.getRemoteSocketAddress()));
+                allAliases.add(bindMessage.getTargetAddress());
             }
         } else {
             // when not a member connection, register the remote socket address
             remoteEndpoint = new Address(connection.getRemoteSocketAddress());
         }
+//        remoteEndpoint = new Address(connection.getRemoteSocketAddress());
 
         return bind0(connection,
                 remoteEndpoint,
                 allAliases,
-                bindMessage.isReply());
+                bindMessage.isReply(), bindMessage.getTargetAddress());
     }
 
     /**
      * Binding completes the connection and makes it available to be used with the ConnectionManager.
      */
     private synchronized void bind(TcpIpConnection connection, Address remoteEndPoint, Address localEndpoint, boolean reply) {
+        new Exception(Thread.currentThread().getName() + " binding " + remoteEndPoint).printStackTrace();
+
         if (logger.isFinestEnabled()) {
             logger.finest("Binding " + connection + " to " + remoteEndPoint + ", reply is " + reply);
         }
@@ -143,7 +148,7 @@ final class BindHandler {
             return;
         }
 
-        bind0(connection, remoteEndPoint, null, reply);
+        bind0(connection, remoteEndPoint, null, reply, null);
     }
 
     /**
@@ -161,7 +166,7 @@ final class BindHandler {
     @SuppressWarnings({"checkstyle:npathcomplexity"})
     @SuppressFBWarnings("RV_RETURN_VALUE_OF_PUTIFABSENT_IGNORED")
     private synchronized boolean bind0(TcpIpConnection connection, Address remoteEndpoint,
-                                       Collection<Address> remoteAddressAliases, boolean reply) {
+                                       Collection<Address> remoteAddressAliases, boolean reply, Address originalAddr) {
         final Address remoteAddress = new Address(connection.getRemoteSocketAddress());
         if (tcpIpEndpointManager.connectionsInProgress.contains(remoteAddress)) {
             // this is the connection initiator side --> register the connection under the address that was requested
@@ -178,7 +183,7 @@ final class BindHandler {
         connection.setEndPoint(remoteEndpoint);
         ioService.onSuccessfulConnection(remoteEndpoint);
         if (reply) {
-            BindRequest bindRequest = new BindRequest(logger, ioService, connection, remoteEndpoint, false);
+            BindRequest bindRequest = new BindRequest(logger, ioService, connection, remoteEndpoint, false, originalAddr);
             bindRequest.send();
         }
 
@@ -193,6 +198,7 @@ final class BindHandler {
 
         if (remoteAddressAliases != null && returnValue) {
             for (Address remoteAddressAlias : remoteAddressAliases) {
+                logger.severe("Registering connection " + connection + " to address alias " + remoteAddressAlias);
                 if (logger.isLoggable(Level.FINEST)) {
                     logger.finest("Registering connection " + connection + " to address alias " + remoteAddressAlias);
                 }

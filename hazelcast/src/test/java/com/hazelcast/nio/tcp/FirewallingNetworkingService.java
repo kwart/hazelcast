@@ -341,5 +341,11 @@ public class FirewallingNetworkingService
             return delegate.registerConnection(address, connection);
         }
 
+        @Override
+        public Collection<Address> getAliases(Address address) {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
     }
 }

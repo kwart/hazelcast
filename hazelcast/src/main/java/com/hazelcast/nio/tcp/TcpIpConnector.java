@@ -185,7 +185,7 @@ class TcpIpConnector {
                     ioService.interceptSocket(endpointManager.getEndpointQualifier(), socketChannel.socket(), false);
 
                     connection = endpointManager.newConnection(channel, address);
-                    BindRequest request = new BindRequest(logger, ioService, connection, address, true);
+                    BindRequest request = new BindRequest(logger, ioService, connection, address, true, null);
                     request.send();
                 } catch (NullPointerException e) {
                     // Helper piece of code, which will allow to identify rare NPEs in TLS connections
