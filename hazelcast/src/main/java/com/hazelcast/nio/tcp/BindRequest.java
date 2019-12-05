@@ -56,7 +56,7 @@ public class BindRequest {
             logger.finest("Sending bind packet to " + remoteEndPoint);
         }
         // since 3.12, send the new bind message followed by the pre-3.12 BindMessage
-        ExtendedBindMessage bind = new ExtendedBindMessage((byte) 1, getConfiguredLocalAddresses(), remoteEndPoint, reply);
+        ExtendedBindMessage bind = new ExtendedBindMessage((byte) 2, getConfiguredLocalAddresses(), remoteEndPoint, reply, ioService.getGroupName());
         byte[] bytes = ioService.getSerializationService().toBytes(bind);
         // using one of the undefined packet types we can avoid old members
         // logging a serialization exception because they cannot deserialize the

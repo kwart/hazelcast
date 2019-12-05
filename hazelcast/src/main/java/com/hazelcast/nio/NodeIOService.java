@@ -403,4 +403,9 @@ public class NodeIOService implements IOService {
     public MemcacheProtocolConfig getMemcacheProtocolConfig() {
         return memcacheProtocolConfig;
     }
+
+    @Override
+    public String getGroupName() {
+        return node.getConfig().getGroupConfig().getName();
+    }
 }

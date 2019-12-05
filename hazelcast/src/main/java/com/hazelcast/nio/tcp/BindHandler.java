@@ -81,6 +81,12 @@ final class BindHandler {
             logger.finest("Extended binding " + connection + ", complete message is " + bindMessage);
         }
 
+        String bindGroupName = bindMessage.getGroupName();
+        if (bindGroupName != null && !bindGroupName.equals(ioService.getGroupName())) {
+            connection.close("Group names don't match.", null);
+            return false;
+        }
+
         Map<ProtocolType, Collection<Address>> remoteAddressesPerProtocolType = bindMessage.getLocalAddresses();
         List<Address> allAliases = new ArrayList<Address>();
         for (Map.Entry<ProtocolType, Collection<Address>> remoteAddresses : remoteAddressesPerProtocolType.entrySet()) {

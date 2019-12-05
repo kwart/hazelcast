@@ -50,16 +50,18 @@ public class ExtendedBindMessage implements IdentifiedDataSerializable {
     private Map<ProtocolType, Collection<Address>> localAddresses;
     private Address targetAddress;
     private boolean reply;
+    private String groupName;
 
     public ExtendedBindMessage() {
     }
 
     public ExtendedBindMessage(byte schemaVersion, Map<ProtocolType, Collection<Address>> localAddresses,
-                               Address targetAddress, boolean reply) {
+                               Address targetAddress, boolean reply, String groupName) {
         this.schemaVersion = schemaVersion;
         this.localAddresses = new EnumMap<ProtocolType, Collection<Address>>(localAddresses);
         this.targetAddress = targetAddress;
         this.reply = reply;
+        this.groupName = groupName;
     }
 
     byte getSchemaVersion() {
@@ -76,6 +78,11 @@ public class ExtendedBindMessage implements IdentifiedDataSerializable {
 
     public boolean isReply() {
         return reply;
+    }
+
+    public String getGroupName() {
+//        return groupName;
+        return null;
     }
 
     @Override
@@ -95,12 +102,14 @@ public class ExtendedBindMessage implements IdentifiedDataSerializable {
         out.writeBoolean(reply);
         int size = (localAddresses == null) ? 0 : localAddresses.size();
         out.writeInt(size);
-        if (size == 0) {
-            return;
+        if (size > 0) {
+            for (Map.Entry<ProtocolType, Collection<Address>> addressEntry : localAddresses.entrySet()) {
+                out.writeInt(addressEntry.getKey().ordinal());
+                writeCollection(addressEntry.getValue(), out);
+            }
         }
-        for (Map.Entry<ProtocolType, Collection<Address>> addressEntry : localAddresses.entrySet()) {
-            out.writeInt(addressEntry.getKey().ordinal());
-            writeCollection(addressEntry.getValue(), out);
+        if (schemaVersion > 1) {
+            out.writeUTF(groupName);
         }
     }
 
@@ -113,20 +122,24 @@ public class ExtendedBindMessage implements IdentifiedDataSerializable {
         if (size == 0) {
             localAddresses = Collections.emptyMap();
             return;
+        } else {
+            Map<ProtocolType, Collection<Address>> addressesPerProtocolType
+                    = new EnumMap<ProtocolType, Collection<Address>>(ProtocolType.class);
+            for (int i = 0; i < size; i++) {
+                ProtocolType protocolType = ProtocolType.valueOf(in.readInt());
+                Collection<Address> addresses = readCollection(in);
+                addressesPerProtocolType.put(protocolType, addresses);
+            }
+            this.localAddresses = addressesPerProtocolType;
         }
-        Map<ProtocolType, Collection<Address>> addressesPerProtocolType
-                = new EnumMap<ProtocolType, Collection<Address>>(ProtocolType.class);
-        for (int i = 0; i < size; i++) {
-            ProtocolType protocolType = ProtocolType.valueOf(in.readInt());
-            Collection<Address> addresses = readCollection(in);
-            addressesPerProtocolType.put(protocolType, addresses);
+        if (schemaVersion > 1) {
+            this.groupName = in.readUTF();
         }
-        this.localAddresses = addressesPerProtocolType;
     }
 
     @Override
     public String toString() {
         return "ExtendedBindMessage{" + "schemaVersion=" + schemaVersion + ", localAddresses=" + localAddresses
-                + ", targetAddress=" + targetAddress + ", reply=" + reply + '}';
+                + ", targetAddress=" + targetAddress + ", reply=" + reply + ", groupName=" + groupName + '}';
     }
 }

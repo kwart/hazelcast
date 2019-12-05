@@ -115,4 +115,6 @@ public interface IOService {
     InboundHandler[] createInboundHandlers(EndpointQualifier qualifier, TcpIpConnection connection);
 
     OutboundHandler[] createOutboundHandlers(EndpointQualifier qualifier, TcpIpConnection connection);
+
+    String getGroupName();
 }
