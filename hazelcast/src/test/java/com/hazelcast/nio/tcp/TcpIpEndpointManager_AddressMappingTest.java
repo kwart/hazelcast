@@ -21,6 +21,7 @@ import static com.hazelcast.test.HazelcastTestSupport.assumeLocalhostResolvesTo_
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 
 import org.junit.AfterClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -32,11 +33,15 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.annotation.QuickTest;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
 public class TcpIpEndpointManager_AddressMappingTest {
+
+    @Rule
+    public OverridePropertyRule overrideProp = OverridePropertyRule.set("hazelcast.tcp.join.port.try.count", "2");
 
     @AfterClass
     public static void afterClass() {
@@ -51,7 +56,7 @@ public class TcpIpEndpointManager_AddressMappingTest {
         assumeLocalhostResolvesTo_127_0_0_1();
         HazelcastInstance hz1 = newMember("127.0.0.1");
         try {
-            HazelcastInstance hz2 = newMember("localhost");
+            HazelcastInstance hz2 = newMember("192.168.1.105");
             assertClusterSize(1, hz1, hz2);
         } finally {
             Hazelcast.shutdownAll();

@@ -49,6 +49,7 @@ public class BindRequest {
     }
 
     public void send() {
+        new Exception(Thread.currentThread().getName() + " sending bind request to " + remoteEndPoint).printStackTrace();
         connection.setEndPoint(remoteEndPoint);
         ioService.onSuccessfulConnection(remoteEndPoint);
         //make sure bind packet is the first packet sent to the end point.

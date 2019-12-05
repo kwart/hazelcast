@@ -179,7 +179,10 @@ public final class Address implements IdentifiedDataSerializable {
             return false;
         }
         final Address address = (Address) o;
-        return this.port == address.port && this.inetAddress.equals(address.inetAddress);
+        return this.port == address.port 
+//                && this.inetAddress.equals(address.inetAddress)
+                && (this.host == address.host || (this.host != null && this.host.equals(address.host)))
+                ;
     }
 
     @Override

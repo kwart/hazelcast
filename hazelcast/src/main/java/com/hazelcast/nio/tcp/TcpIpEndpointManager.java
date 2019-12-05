@@ -194,6 +194,7 @@ public class TcpIpEndpointManager
 
     @Override
     public TcpIpConnection getOrConnect(final Address address, final boolean silent) {
+        new Exception(Thread.currentThread().getName() + " getOrConnect " + address).printStackTrace();
         TcpIpConnection connection = connectionsMap.get(address);
         if (connection == null && networkingService.isLive()) {
             if (connectionsInProgress.add(address)) {
@@ -227,6 +228,7 @@ public class TcpIpEndpointManager
                 TcpIpConnectionErrorHandler connectionMonitor = getErrorHandler(remoteEndPoint, true);
                 connection.setErrorHandler(connectionMonitor);
             }
+            new Exception(Thread.currentThread().getName() + " registering " + remoteEndPoint).printStackTrace();
             connectionsMap.put(remoteEndPoint, connection);
 
             ioService.getEventService().executeEventCallback(new StripedRunnable() {
