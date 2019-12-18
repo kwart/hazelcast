@@ -451,7 +451,9 @@ public class ClusterServiceImpl implements ClusterService, ConnectionListener, M
     }
 
     private boolean checkValidMaster(Address callerAddress) {
-        return (callerAddress != null && callerAddress.equals(getMasterAddress()));
+        UUID uuidMaster = addressToUuid(getMasterAddress());
+        UUID callerUuid = addressToUuid(callerAddress);
+        return (callerUuid != null && callerUuid.equals(uuidMaster));
     }
 
     private boolean shouldProcessMemberUpdate(MembersView membersView) {
@@ -635,7 +637,7 @@ public class ClusterServiceImpl implements ClusterService, ConnectionListener, M
 
     @Override
     public boolean isMaster() {
-        return node.getThisAddress().equals(masterAddress);
+        return getThisUuid().equals(addressToUuid(masterAddress));
     }
 
     @Override
@@ -1008,6 +1010,7 @@ public class ClusterServiceImpl implements ClusterService, ConnectionListener, M
                 .instance(node.hazelcastInstance)
                 .build();
         node.loggingService.setThisMember(localMember);
+        node.getNetworkingService().getIoService().getAddressToUuid().put(localMember.getAddress(), localMember.getUuid());
         return localMember;
     }
 
@@ -1035,5 +1038,9 @@ public class ClusterServiceImpl implements ClusterService, ConnectionListener, M
     @Override
     public String toString() {
         return "ClusterService" + "{address=" + getThisAddress() + '}';
+    }
+
+    private UUID addressToUuid(Address address) {
+        return node.networkingService.getIoService().getAddressToUuid().get(address);
     }
 }

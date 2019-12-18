@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 
 final class BindHandler {
@@ -109,7 +110,7 @@ final class BindHandler {
         return bind0(connection,
                 remoteEndpoint,
                 allAliases,
-                bindMessage.isReply());
+                bindMessage);
     }
 
     /**
@@ -127,7 +128,7 @@ final class BindHandler {
     @SuppressWarnings({"checkstyle:npathcomplexity"})
     @SuppressFBWarnings("RV_RETURN_VALUE_OF_PUTIFABSENT_IGNORED")
     private synchronized boolean bind0(TcpIpConnection connection, Address remoteEndpoint,
-                                       Collection<Address> remoteAddressAliases, boolean reply) {
+                                       Collection<Address> remoteAddressAliases, BindMessage bindMessage) {
         final Address remoteAddress = new Address(connection.getRemoteSocketAddress());
         if (tcpIpEndpointManager.connectionsInProgress.contains(remoteAddress)) {
             // this is the connection initiator side --> register the connection under the address that was requested
@@ -143,8 +144,8 @@ final class BindHandler {
         }
         connection.setEndPoint(remoteEndpoint);
         ioService.onSuccessfulConnection(remoteEndpoint);
-        if (reply) {
-            BindRequest bindRequest = new BindRequest(logger, ioService, connection, remoteEndpoint, false);
+        if (bindMessage.isReply()) {
+            BindRequest bindRequest = new BindRequest(logger, ioService, connection, remoteEndpoint, false, bindMessage.getTargetAddress());
             bindRequest.send();
         }
 
@@ -157,12 +158,18 @@ final class BindHandler {
         }
         boolean returnValue = tcpIpEndpointManager.registerConnection(remoteEndpoint, connection);
 
+        UUID uuid = bindMessage.getUuid();
+        tcpIpEndpointManager.connectionsMap.putIfAbsent(uuid, connection);
         if (remoteAddressAliases != null && returnValue) {
             for (Address remoteAddressAlias : remoteAddressAliases) {
                 if (logger.isLoggable(Level.FINEST)) {
                     logger.finest("Registering connection " + connection + " to address alias " + remoteAddressAlias);
                 }
-                tcpIpEndpointManager.connectionsMap.putIfAbsent(remoteAddressAlias, connection);
+                tcpIpEndpointManager.addressMap.putIfAbsent(remoteAddressAlias, uuid);
+                TcpIpConnection tmpCon = tcpIpEndpointManager.addressWithoutUuidMap.remove(remoteAddress);
+                if (tmpCon != null && tmpCon != connection) {
+                    tmpCon.close("Two connections for the same endpoint", null);
+                }
             }
         }
 

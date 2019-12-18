@@ -41,6 +41,7 @@ import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.util.AddressUtil;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.cluster.Address;
+import com.hazelcast.cluster.impl.MemberImpl;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.eventservice.EventService;
@@ -53,6 +54,9 @@ import java.net.Socket;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.instance.EndpointQualifier.MEMBER;
@@ -67,12 +71,14 @@ public class NodeIOService implements IOService {
     private final NodeEngineImpl nodeEngine;
     private final RestApiConfig restApiConfig;
     private final MemcacheProtocolConfig memcacheProtocolConfig;
+    private final ConcurrentMap<Address, UUID> addressToUuid;
 
     public NodeIOService(Node node, NodeEngineImpl nodeEngine) {
         this.node = node;
         this.nodeEngine = nodeEngine;
         restApiConfig = initRestApiConfig(node.getConfig());
         memcacheProtocolConfig = initMemcacheProtocolConfig(node.getConfig());
+        addressToUuid = new ConcurrentHashMap<>();
     }
 
     private static RestApiConfig initRestApiConfig(Config config) {
@@ -365,5 +371,15 @@ public class NodeIOService implements IOService {
     @Override
     public AuditlogService getAuditLogService() {
         return node.getNodeExtension().getAuditlogService();
+    }
+
+    @Override
+    public UUID getUuid() {
+        return node.getThisUuid();
+    }
+
+    @Override
+    public ConcurrentMap<Address, UUID> getAddressToUuid() {
+        return addressToUuid;
     }
 }

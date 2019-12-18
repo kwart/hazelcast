@@ -313,7 +313,7 @@ public class MetricsRegistryImpl implements MetricsRegistry {
                 this::lookupMetricValueCatcher, collector, minimumLevel);
 
         collectionCycle.collectStaticMetrics(probeInstances);
-        collectionCycle.collectDynamicMetrics(metricSourceMap.keySet());
+//        collectionCycle.collectDynamicMetrics(metricSourceMap.keySet());
         collectionCycle.notifyAllGauges(gauges.values());
         collectionCycle.cleanUp();
     }

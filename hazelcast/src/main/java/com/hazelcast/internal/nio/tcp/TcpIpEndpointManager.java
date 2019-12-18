@@ -17,6 +17,7 @@
 package com.hazelcast.internal.nio.tcp;
 
 import com.hazelcast.cluster.Address;
+import com.hazelcast.cluster.impl.MemberImpl;
 import com.hazelcast.config.EndpointConfig;
 import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.instance.ProtocolType;
@@ -50,9 +51,10 @@ import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -80,8 +82,13 @@ public class TcpIpEndpointManager
     @Probe(name = "inProgressCount")
     final Set<Address> connectionsInProgress = newSetFromMap(new ConcurrentHashMap<>());
 
-    @Probe(name = "count", level = MANDATORY)
-    final ConcurrentHashMap<Address, TcpIpConnection> connectionsMap = new ConcurrentHashMap<>(100);
+//    @Probe(name = "count", level = MANDATORY)
+    final ConcurrentHashMap<UUID, TcpIpConnection> connectionsMap = new ConcurrentHashMap<>(100);
+
+//    @Probe(name = "addressCount", level = MANDATORY)
+    final ConcurrentMap<Address, UUID> addressMap;
+
+    final ConcurrentHashMap<Address, TcpIpConnection> addressWithoutUuidMap = new ConcurrentHashMap<>(100);
 
     @Probe(name = "activeCount", level = MANDATORY)
     final Set<TcpIpConnection> activeConnections = newSetFromMap(new ConcurrentHashMap<>());
@@ -129,6 +136,7 @@ public class TcpIpEndpointManager
         this.ioService = ioService;
         this.logger = loggingService.getLogger(TcpIpEndpointManager.class);
         this.connector = new TcpIpConnector(this);
+        this.addressMap = ioService.getAddressToUuid();
 
         boolean spoofingChecks = properties != null && properties.getBoolean(ClusterProperty.BIND_SPOOFING_CHECKS);
         this.bindHandler = new BindHandler(this, ioService, logger, spoofingChecks, supportedProtocolTypes);
@@ -164,12 +172,16 @@ public class TcpIpEndpointManager
 
     @Override
     public synchronized void accept(Packet packet) {
+        System.err.println(Thread.currentThread().getName() + " Accepting packet");
         bindHandler.process(packet);
     }
 
     @Override
     public TcpIpConnection getConnection(Address address) {
-        return connectionsMap.get(address);
+//        System.err.println(Thread.currentThread().getName() + " Getting connection for address " + address);
+//        new Exception(Thread.currentThread().getName() + " Getting connection for address " + address).printStackTrace();
+        UUID uuid = addressMap.get(address);
+        return (uuid != null && connectionsMap.containsKey(uuid)) ? connectionsMap.get(uuid) : addressWithoutUuidMap.get(address);
     }
 
     @Override
@@ -179,7 +191,12 @@ public class TcpIpEndpointManager
 
     @Override
     public TcpIpConnection getOrConnect(final Address address, final boolean silent) {
-        TcpIpConnection connection = connectionsMap.get(address);
+//        System.err.println(Thread.currentThread().getName() + " GetOrConnect address " + address + ", " + addressMap);
+        UUID uuid = addressMap.get(address);
+        if (uuid != null && connectionsMap.containsKey(uuid)) {
+            return connectionsMap.get(uuid);
+        }
+        TcpIpConnection connection = addressWithoutUuidMap.get(address);
         if (connection == null && networkingService.isLive()) {
             if (connectionsInProgress.add(address)) {
                 connector.asyncConnect(address, silent);
@@ -190,6 +207,7 @@ public class TcpIpEndpointManager
 
     @Override
     public synchronized boolean registerConnection(final Address remoteEndPoint, final TcpIpConnection connection) {
+//        System.err.println(Thread.currentThread().getName() + " Register connection " + remoteEndPoint);
         try {
             if (remoteEndPoint.equals(ioService.getThisAddress())) {
                 return false;
@@ -212,7 +230,17 @@ public class TcpIpEndpointManager
                 TcpIpConnectionErrorHandler connectionMonitor = getErrorHandler(remoteEndPoint, true);
                 connection.setErrorHandler(connectionMonitor);
             }
-            connectionsMap.put(remoteEndPoint, connection);
+            UUID uuid = addressMap.get(remoteEndPoint);
+            if (uuid != null && connectionsMap.containsKey(uuid)) {
+                // already registered
+                return false;
+            }
+            if (uuid!=null) {
+                connectionsMap.put(uuid, connection);
+            } else {
+                addressWithoutUuidMap.put(remoteEndPoint, connection);
+            }
+//            connectionsMap.put(remoteEndPoint, connection);
 
             ioService.getEventService().executeEventCallback(new StripedRunnable() {
                 @Override
@@ -422,6 +450,7 @@ public class TcpIpEndpointManager
             }
         }
 
+        /*
         for (Map.Entry<Address, TcpIpConnection> entry : connectionsMap.entrySet()) {
             Address bindAddress = entry.getKey();
             TcpIpConnection connection = entry.getValue();
@@ -432,6 +461,7 @@ public class TcpIpEndpointManager
                         .withTag("endpoint", connection.getEndPoint().toString()), connection);
             }
         }
+        */
     }
 
     private final class SendTask

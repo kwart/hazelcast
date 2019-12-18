@@ -38,6 +38,8 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 
 @SuppressWarnings({"checkstyle:methodcount"})
 public interface IOService {
@@ -120,4 +122,7 @@ public interface IOService {
     OutboundHandler[] createOutboundHandlers(EndpointQualifier qualifier, TcpIpConnection connection);
 
     AuditlogService getAuditLogService();
+
+    UUID getUuid();
+    ConcurrentMap<Address, UUID> getAddressToUuid();
 }
