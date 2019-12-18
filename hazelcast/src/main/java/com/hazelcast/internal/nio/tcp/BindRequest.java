@@ -27,6 +27,7 @@ import com.hazelcast.logging.ILogger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class BindRequest {
@@ -38,13 +39,15 @@ public class BindRequest {
     private final TcpIpConnection connection;
     private final Address remoteEndPoint;
     private final boolean reply;
+    private final Address origAddress;
 
-    BindRequest(ILogger logger, IOService ioService, TcpIpConnection connection, Address remoteEndPoint, boolean reply) {
+    BindRequest(ILogger logger, IOService ioService, TcpIpConnection connection, Address remoteEndPoint, boolean reply, Address origAddress) {
         this.logger = logger;
         this.ioService = ioService;
         this.connection = connection;
         this.remoteEndPoint = remoteEndPoint;
         this.reply = reply;
+        this.origAddress = origAddress;
     }
 
     public void send() {
@@ -54,7 +57,7 @@ public class BindRequest {
         if (logger.isFinestEnabled()) {
             logger.finest("Sending bind packet to " + remoteEndPoint);
         }
-        BindMessage bind = new BindMessage((byte) 1, getConfiguredLocalAddresses(), remoteEndPoint, reply);
+        BindMessage bind = new BindMessage((byte) 1, getConfiguredLocalAddresses(), remoteEndPoint, reply, ioService.getUuid());
         byte[] bytes = ioService.getSerializationService().toBytes(bind);
         Packet packet = new Packet(bytes).setPacketType(Packet.Type.BIND);
         connection.write(packet);
@@ -63,6 +66,11 @@ public class BindRequest {
 
     Map<ProtocolType, Collection<Address>> getConfiguredLocalAddresses() {
         Map<ProtocolType, Collection<Address>> addressMap = new HashMap<ProtocolType, Collection<Address>>();
+        if (origAddress!=null) {
+            List<Address> addresses = new ArrayList<Address>();
+            addresses.add(origAddress);
+            addressMap.put(ProtocolType.MEMBER, addresses);
+        }
         Map<EndpointQualifier, Address> addressesPerEndpointQualifier = ioService.getThisAddresses();
         for (Map.Entry<EndpointQualifier, Address> addressEntry : addressesPerEndpointQualifier.entrySet()) {
             Collection<Address> addresses = addressMap.get(addressEntry.getKey().getType());

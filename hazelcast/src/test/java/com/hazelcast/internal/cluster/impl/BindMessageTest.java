@@ -57,7 +57,7 @@ public class BindMessageTest {
 
     @Test
     public void testSerialization_withMultipleLocalAddresses() throws Exception {
-        bindMessage = new BindMessage((byte) 1, localAddresses(), targetAddress, true);
+        bindMessage = new BindMessage((byte) 1, localAddresses(), targetAddress, true, null);
         Data serialized = serializationService.toData(bindMessage);
         BindMessage deserialized = serializationService.toObject(serialized);
         assertEquals(1, deserialized.getSchemaVersion());

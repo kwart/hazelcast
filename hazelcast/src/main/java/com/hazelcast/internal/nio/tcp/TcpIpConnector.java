@@ -187,7 +187,7 @@ class TcpIpConnector {
                     ioService.interceptSocket(endpointManager.getEndpointQualifier(), socketChannel.socket(), false);
 
                     connection = endpointManager.newConnection(channel, address);
-                    BindRequest request = new BindRequest(logger, ioService, connection, address, true);
+                    BindRequest request = new BindRequest(logger, ioService, connection, address, true, null);
                     request.send();
                 } catch (Exception e) {
                     closeConnection(connection, e);

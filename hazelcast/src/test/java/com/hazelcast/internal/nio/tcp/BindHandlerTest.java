@@ -200,7 +200,7 @@ public class BindHandlerTest {
 
     private Packet bindMessage() {
         BindMessage bindMessage =
-                new BindMessage((byte) 1, localAddresses, new Address(CLIENT_SOCKET_ADDRESS), reply);
+                new BindMessage((byte) 1, localAddresses, new Address(CLIENT_SOCKET_ADDRESS), reply, null);
 
         Packet packet = new Packet(serializationService.toBytes(bindMessage));
         TcpIpConnection connection = new TcpIpConnection(endpointManager, null, 1, channel);

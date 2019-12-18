@@ -52,6 +52,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.RejectedExecutionException;
@@ -81,7 +82,12 @@ public class TcpIpEndpointManager
     final Set<Address> connectionsInProgress = newSetFromMap(new ConcurrentHashMap<>());
 
     @Probe(name = "count", level = MANDATORY)
-    final ConcurrentHashMap<Address, TcpIpConnection> connectionsMap = new ConcurrentHashMap<>(100);
+    final ConcurrentHashMap<UUID, TcpIpConnection> connectionsMap = new ConcurrentHashMap<>(100);
+
+    @Probe(name = "addressCount", level = MANDATORY)
+    final ConcurrentHashMap<Address, UUID> addressMap = new ConcurrentHashMap<>(100);
+
+    final ConcurrentHashMap<Address, TcpIpConnection> addressWithoutUuidMap = new ConcurrentHashMap<>(100);
 
     @Probe(name = "activeCount", level = MANDATORY)
     final Set<TcpIpConnection> activeConnections = newSetFromMap(new ConcurrentHashMap<>());
@@ -179,7 +185,11 @@ public class TcpIpEndpointManager
 
     @Override
     public TcpIpConnection getOrConnect(final Address address, final boolean silent) {
-        TcpIpConnection connection = connectionsMap.get(address);
+        UUID uuid = addressMap.get(address);
+        if (uuid!=null) {
+            return connectionsMap.get(uuid);
+        }
+        TcpIpConnection connection = addressWithoutUuidMap.get(address);
         if (connection == null && networkingService.isLive()) {
             if (connectionsInProgress.add(address)) {
                 connector.asyncConnect(address, silent);
@@ -212,7 +222,13 @@ public class TcpIpEndpointManager
                 TcpIpConnectionErrorHandler connectionMonitor = getErrorHandler(remoteEndPoint, true);
                 connection.setErrorHandler(connectionMonitor);
             }
-            connectionsMap.put(remoteEndPoint, connection);
+            UUID uuid = addressMap.get(remoteEndPoint);
+            if (uuid != null) {
+                // already registered
+                return false;
+            }
+            addressWithoutUuidMap.put(remoteEndPoint, connection);
+//            connectionsMap.put(remoteEndPoint, connection);
 
             ioService.getEventService().executeEventCallback(new StripedRunnable() {
                 @Override
@@ -422,6 +438,7 @@ public class TcpIpEndpointManager
             }
         }
 
+        /*
         for (Map.Entry<Address, TcpIpConnection> entry : connectionsMap.entrySet()) {
             Address bindAddress = entry.getKey();
             TcpIpConnection connection = entry.getValue();
@@ -432,6 +449,7 @@ public class TcpIpEndpointManager
                         .withTag("endpoint", connection.getEndPoint().toString()), connection);
             }
         }
+        */
     }
 
     private final class SendTask

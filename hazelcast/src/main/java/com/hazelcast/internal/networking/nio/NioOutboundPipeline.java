@@ -413,6 +413,7 @@ public final class NioOutboundPipeline
         lastWriteTime = currentTimeMillis();
         int written = socketChannel.write(sendBuffer);
         bytesWritten.inc(written);
+        System.err.println("Written bytes " + written + " " + Thread.currentThread().getName());
         //System.out.println(channel + " bytes written:" + written);
     }
 
