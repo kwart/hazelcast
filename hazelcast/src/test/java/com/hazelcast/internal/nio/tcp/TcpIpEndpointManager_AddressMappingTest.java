@@ -84,7 +84,9 @@ public class TcpIpEndpointManager_AddressMappingTest {
     }
 
     private static HazelcastInstance newMember2(String hostname) {
-        Config config = smallInstanceConfig().setProperty(ClusterProperty.MAX_JOIN_SECONDS.getName(), "5");
+        Config config = smallInstanceConfig()
+//                .setProperty(ClusterProperty.MAX_JOIN_SECONDS.getName(), "5")
+                ;
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
         join.getTcpIpConfig().setEnabled(true).clear().addMember(hostname);

@@ -55,7 +55,6 @@ public class PacketDecoder extends InboundHandlerWithCounters<ByteBuffer, Consum
 
     @Override
     public HandlerStatus onRead() throws Exception {
-        System.err.println(Thread.currentThread().getName());
         src.flip();
         try {
             while (src.hasRemaining()) {
@@ -73,7 +72,6 @@ public class PacketDecoder extends InboundHandlerWithCounters<ByteBuffer, Consum
     }
 
     protected void onPacketComplete(Packet packet) {
-        System.err.println(Thread.currentThread().getName() + " packet complete");
         if (packet.isFlagRaised(FLAG_URGENT)) {
             priorityPacketsRead.inc();
         } else {

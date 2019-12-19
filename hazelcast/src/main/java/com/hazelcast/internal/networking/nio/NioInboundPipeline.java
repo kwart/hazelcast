@@ -115,7 +115,7 @@ public final class NioInboundPipeline extends NioPipeline implements InboundPipe
         if (readBytes == -1) {
             throw new EOFException("Remote socket closed!");
         }
-        System.err.println("Read bytes " + readBytes + " " + Thread.currentThread().getName());
+//        System.err.println("Read bytes " + readBytes + " " + Thread.currentThread().getName());
         bytesRead.inc(readBytes);
 
         // currently the whole pipeline is retried when one of the handlers is dirty; but only the dirty handler
