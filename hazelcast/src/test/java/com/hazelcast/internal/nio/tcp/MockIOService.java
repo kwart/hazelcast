@@ -56,6 +56,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
 import static com.hazelcast.internal.nio.Packet.Type.BIND;
@@ -410,6 +411,12 @@ public class MockIOService implements IOService {
 
     @Override
     public UUID getUuid() {
+        return null;
+    }
+
+    @Override
+    public ConcurrentMap<Address, UUID> getAddressToUuid() {
+        // TODO Auto-generated method stub
         return null;
     }
 }

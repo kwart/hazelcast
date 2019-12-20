@@ -72,6 +72,7 @@ public class PacketDecoder extends InboundHandlerWithCounters<ByteBuffer, Consum
     }
 
     protected void onPacketComplete(Packet packet) {
+//        System.err.println(Thread.currentThread().getName() + " PacketDecoder - complete " + packet);
         if (packet.isFlagRaised(FLAG_URGENT)) {
             priorityPacketsRead.inc();
         } else {

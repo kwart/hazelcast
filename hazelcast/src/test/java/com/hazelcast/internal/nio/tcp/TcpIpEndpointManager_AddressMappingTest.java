@@ -85,6 +85,7 @@ public class TcpIpEndpointManager_AddressMappingTest {
 
     private static HazelcastInstance newMember2(String hostname) {
         Config config = smallInstanceConfig()
+                .setProperty("hazelcast.member.naming.moby.enabled", "false")
 //                .setProperty(ClusterProperty.MAX_JOIN_SECONDS.getName(), "5")
                 ;
         JoinConfig join = config.getNetworkConfig().getJoin();

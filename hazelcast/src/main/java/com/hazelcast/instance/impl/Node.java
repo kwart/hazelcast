@@ -253,6 +253,7 @@ public class Node {
             metricsRegistry.provideMetrics(nodeExtension);
 
             networkingService = nodeContext.createNetworkingService(this, serverSocketRegistry);
+            networkingService.getIoService().getAddressToUuid().put(localMember.getAddress(), localMember.getUuid());
             healthMonitor = new HealthMonitor(this);
             clientEngine = hasClientServerSocket() ? new ClientEngineImpl(this) : new NoOpClientEngine();
             JoinConfig joinConfig = getActiveMemberNetworkConfig(this.config).getJoin();

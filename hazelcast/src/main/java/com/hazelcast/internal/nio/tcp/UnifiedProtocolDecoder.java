@@ -35,6 +35,7 @@ import com.hazelcast.internal.nio.ascii.TextEncoder;
 import com.hazelcast.spi.properties.HazelcastProperties;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 
 import static com.hazelcast.internal.networking.ChannelOption.DIRECT_BUF;
 import static com.hazelcast.internal.networking.ChannelOption.SO_RCVBUF;
@@ -118,6 +119,7 @@ public class UnifiedProtocolDecoder
 
             if (!channel.isClientMode()) {
                 protocolEncoder.signalProtocolEstablished(protocol);
+                System.err.println(Thread.currentThread().getName() + " Signal protocol established");
             }
 
             return CLEAN;

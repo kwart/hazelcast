@@ -57,6 +57,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -94,8 +95,9 @@ public class ClusterJoinManager {
     private final Lock clusterServiceLock;
     private final ClusterClockImpl clusterClock;
     private final ClusterStateManager clusterStateManager;
+    private final ConcurrentMap<Address, UUID> addressToUuid;
 
-    private final Map<Address, MemberInfo> joiningMembers = new LinkedHashMap<>();
+    private final Map<UUID, MemberInfo> joiningMembers = new LinkedHashMap<>();
     private final Map<UUID, Long> recentlyJoinedMemberUuids = new HashMap<>();
     private final long maxWaitMillisBeforeJoin;
     private final long waitMillisBeforeJoin;
@@ -118,6 +120,7 @@ public class ClusterJoinManager {
         maxWaitMillisBeforeJoin = node.getProperties().getMillis(ClusterProperty.MAX_WAIT_SECONDS_BEFORE_JOIN);
         waitMillisBeforeJoin = node.getProperties().getMillis(ClusterProperty.WAIT_SECONDS_BEFORE_JOIN);
         staleJoinPreventionDuration = TimeUnit.SECONDS.toMillis(STALE_JOIN_PREVENTION_DURATION_SECONDS);
+        addressToUuid = node.getNetworkingService().getIoService().getAddressToUuid();
     }
 
     boolean isJoinInProgress() {
@@ -352,7 +355,8 @@ public class ClusterJoinManager {
     }
 
     private boolean authenticate(JoinRequest joinRequest, Connection connection) {
-        if (!joiningMembers.containsKey(joinRequest.getAddress())) {
+        UUID uuid = addressToUuid.get(joinRequest.getAddress());
+        if (uuid != null && !joiningMembers.containsKey(uuid)) {
             try {
                 secureLogin(joinRequest, connection);
             } catch (Exception e) {
@@ -425,7 +429,8 @@ public class ClusterJoinManager {
             firstJoinRequest = now;
         }
 
-        final MemberInfo existing = joiningMembers.put(memberInfo.getAddress(), memberInfo);
+        UUID uuid = addressToUuid.get(memberInfo.getAddress());
+        final MemberInfo existing = joiningMembers.put(uuid, memberInfo);
         if (existing == null) {
             sendMasterAnswer(memberInfo.getAddress());
             if (now - firstJoinRequest < maxWaitMillisBeforeJoin) {
@@ -507,18 +512,27 @@ public class ClusterJoinManager {
                 return;
             }
 
-            if (node.getThisAddress().equals(masterAddress)) {
+            
+            UUID masterUuid = addressToUuid.get(masterAddress);
+            UUID uuid = addressToUuid.get(node.getThisAddress());
+            if (uuid==null) {
+                uuid = node.getThisUuid();
+                addressToUuid.put(node.getThisAddress(), uuid);
+            }
+            if (uuid.equals(masterUuid)) {
                 logger.warning("Received my address as master address from " + callerAddress);
                 return;
             }
 
             Address currentMaster = clusterService.getMasterAddress();
-            if (currentMaster == null || currentMaster.equals(masterAddress)) {
+            UUID currentMasterUuid = currentMaster==null?null:addressToUuid.get(currentMaster);
+            if (currentMaster == null || (currentMasterUuid != null && currentMasterUuid.equals(masterUuid))) {
                 setMasterAndJoin(masterAddress);
                 return;
             }
 
-            if (currentMaster.equals(callerAddress)) {
+            UUID callerUuid = addressToUuid.get(callerAddress);
+            if (currentMasterUuid.equals(callerUuid )) {
                 logger.warning(format("Setting master to %s since %s says it is not master anymore", masterAddress,
                         currentMaster));
                 setMasterAndJoin(masterAddress);
@@ -735,7 +749,8 @@ public class ClusterJoinManager {
                     invokeClusterOp(op, member.getAddress());
                 }
                 for (MemberImpl member : memberMap.getMembers()) {
-                    if (member.localMember() || joiningMembers.containsKey(member.getAddress())) {
+                    UUID uuid = addressToUuid.get(member.getAddress());
+                    if (member.localMember() || joiningMembers.containsKey(uuid)) {
                         continue;
                     }
                     Operation op = new MembersUpdateOp(member.getUuid(), newMembersView, time, partitionRuntimeState, true);
@@ -939,6 +954,6 @@ public class ClusterJoinManager {
     }
 
     void removeJoin(Address address) {
-        joiningMembers.remove(address);
+        joiningMembers.remove(addressToUuid.get(address));
     }
 }
