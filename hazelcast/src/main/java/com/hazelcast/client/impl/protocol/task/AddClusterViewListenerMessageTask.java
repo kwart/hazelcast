@@ -25,6 +25,7 @@ import com.hazelcast.internal.nio.Connection;
 import com.hazelcast.internal.util.UuidUtil;
 
 import java.security.Permission;
+import java.time.LocalTime;
 
 public class AddClusterViewListenerMessageTask
         extends AbstractCallableMessageTask<ClientAddClusterViewListenerCodec.RequestParameters> {
@@ -40,10 +41,13 @@ public class AddClusterViewListenerMessageTask
 
     @Override
     protected Object call() {
+        System.out.println("Registering " + endpoint + ", time=" + LocalTime.now());
         ClusterViewListenerService service = clientEngine.getClusterListenerService();
         service.registerListener(endpoint, clientMessage.getCorrelationId());
         endpoint.addDestroyAction(UuidUtil.newUnsecureUUID(), () -> {
+            System.out.println("Deregistering " + endpoint + ", time=" + LocalTime.now());
             service.deregisterListener(endpoint);
+            System.out.println("Deregistered " + endpoint + ", time=" + LocalTime.now());
             return Boolean.TRUE;
         });
 

@@ -34,6 +34,7 @@ import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.executionservice.ExecutionService;
 
 import java.nio.channels.CancelledKeyException;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -64,6 +65,14 @@ public class ClusterViewListenerService {
     }
 
     private void pushView() {
+        int deathCons = 0;
+        for (ClientEndpoint endpoint : clusterListeningEndpoints.keySet()) {
+            if (!endpoint.getConnection().isAlive()) {
+                deathCons++;
+            }
+        }
+        System.out.println("ClusterViewListenerService.clusterListeningEndpoints size=" + clusterListeningEndpoints.size()
+                + ", death=" + deathCons + ", time=" + LocalTime.now());
         ClientMessage partitionViewMessage = getPartitionViewMessageOrNull();
         if (partitionViewMessage != null) {
             sendToListeningEndpoints(partitionViewMessage);
