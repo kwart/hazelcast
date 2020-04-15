@@ -17,6 +17,7 @@
 package com.hazelcast.internal.dynamicconfig;
 
 import com.hazelcast.config.AdvancedNetworkConfig;
+import com.hazelcast.config.AuditlogConfig;
 import com.hazelcast.config.CRDTReplicationConfig;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.CardinalityEstimatorConfig;
@@ -1087,4 +1088,15 @@ public class DynamicConfigurationAwareConfig extends Config {
     public Config setMetricsConfig(@Nonnull MetricsConfig metricsConfig) {
         throw new UnsupportedOperationException("Unsupported operation");
     }
+
+    @Override
+    public AuditlogConfig getAuditlogConfig() {
+        return staticConfig.getAuditlogConfig();
+    }
+
+    @Override
+    public Config setAuditlogConfig(AuditlogConfig auditlogConfig) {
+        throw new UnsupportedOperationException("Unsupported operation");
+    }
+
 }

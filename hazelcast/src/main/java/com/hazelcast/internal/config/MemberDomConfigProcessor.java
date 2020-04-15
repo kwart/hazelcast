@@ -18,6 +18,7 @@ package com.hazelcast.internal.config;
 
 import com.hazelcast.config.AliasedDiscoveryConfig;
 import com.hazelcast.config.AttributeConfig;
+import com.hazelcast.config.AuditlogConfig;
 import com.hazelcast.config.CRDTReplicationConfig;
 import com.hazelcast.config.CacheDeserializedValues;
 import com.hazelcast.config.CachePartitionLostListenerConfig;
@@ -160,6 +161,7 @@ import static com.hazelcast.config.security.LdapRoleMappingMode.getRoleMappingMo
 import static com.hazelcast.config.security.LdapSearchScope.getSearchScope;
 import static com.hazelcast.internal.config.AliasedDiscoveryConfigUtils.getConfigByTag;
 import static com.hazelcast.internal.config.ConfigSections.ADVANCED_NETWORK;
+import static com.hazelcast.internal.config.ConfigSections.AUDITLOG;
 import static com.hazelcast.internal.config.ConfigSections.CACHE;
 import static com.hazelcast.internal.config.ConfigSections.CARDINALITY_ESTIMATOR;
 import static com.hazelcast.internal.config.ConfigSections.CLUSTER_NAME;
@@ -335,6 +337,8 @@ public class MemberDomConfigProcessor extends AbstractDomConfigProcessor {
             handleCPSubsystem(node);
         } else if (METRICS.isEqual(nodeName)) {
             handleMetrics(node);
+        } else if (AUDITLOG.isEqual(nodeName)) {
+            config.setAuditlogConfig(fillFactoryWithPropertiesCofnig(node, new AuditlogConfig()));
         } else {
             return true;
         }

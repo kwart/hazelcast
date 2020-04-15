@@ -20,6 +20,7 @@ import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.client.impl.ClusterViewListenerService;
 import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.config.AuditlogConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.SecurityConfig;
@@ -162,6 +163,12 @@ public class DefaultNodeExtension implements NodeExtension {
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             if (!BuildInfoProvider.getBuildInfo().isEnterprise()) {
                 throw new IllegalStateException("Symmetric Encryption requires Hazelcast Enterprise Edition");
+            }
+        }
+        AuditlogConfig auditlogConfig = node.getConfig().getAuditlogConfig();
+        if (auditlogConfig != null && auditlogConfig.isEnabled()) {
+            if (!BuildInfoProvider.getBuildInfo().isEnterprise()) {
+                throw new IllegalStateException("Auditlog requires Hazelcast Enterprise Edition");
             }
         }
     }

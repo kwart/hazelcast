@@ -259,7 +259,7 @@ public class HazelcastPropertiesTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void getTimeUnit_noTimeUnitProperty() {
-        defaultProperties.getMillis(ClusterProperty.AUDIT_LOG_ENABLED);
+        defaultProperties.getMillis(ClusterProperty.EVENT_THREAD_COUNT);
     }
 
     @Test

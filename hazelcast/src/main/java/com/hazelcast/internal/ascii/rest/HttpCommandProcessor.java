@@ -20,6 +20,7 @@ import com.hazelcast.core.HazelcastJsonValue;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.ascii.AbstractTextCommandProcessor;
 import com.hazelcast.internal.ascii.TextCommandService;
+import com.hazelcast.internal.auditlog.impl.AuditlogTypeIds;
 import com.hazelcast.internal.json.JsonObject;
 import com.hazelcast.internal.json.JsonValue;
 import com.hazelcast.internal.util.StringUtil;
@@ -213,12 +214,22 @@ public abstract class HttpCommandProcessor<T> extends AbstractTextCommandProcess
         }
         String decodedPass = pass != null ? URLDecoder.decode(pass, "UTF-8") : null;
         UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(decodedName, decodedPass);
+        Boolean passed = Boolean.FALSE;
         try {
             // we don't have an argument for clusterName in HTTP request, so let's reuse the "username" here
             LoginContext lc = securityContext.createMemberLoginContext(decodedName, credentials, command.getConnection());
             lc.login();
+            passed = Boolean.TRUE;
         } catch (LoginException e) {
             return false;
+        } finally {
+            textCommandService.getNode().getNodeExtension().getAuditlogService()
+                .eventBuilder(AuditlogTypeIds.AUTHENTICATION_REST)
+                .message("REST connection authentication.")
+                .addParameter("user", userName)
+                .addParameter("command", command)
+                .addParameter("passed", passed)
+                .log();
         }
         return true;
     }

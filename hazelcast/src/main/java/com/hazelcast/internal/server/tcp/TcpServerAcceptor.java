@@ -18,6 +18,7 @@ package com.hazelcast.internal.server.tcp;
 
 import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.instance.impl.OutOfMemoryErrorDispatcher;
+import com.hazelcast.internal.auditlog.impl.AuditlogTypeIds;
 import com.hazelcast.internal.metrics.DynamicMetricsProvider;
 import com.hazelcast.internal.metrics.MetricDescriptor;
 import com.hazelcast.internal.metrics.MetricsCollectionContext;
@@ -288,7 +289,12 @@ public class TcpServerAcceptor implements DynamicMetricsProvider {
             if (logger.isFineEnabled()) {
                 logger.fine("Accepting socket connection from " + channel.socket().getRemoteSocketAddress());
             }
-
+            serverContext.getAuditLogService()
+                .eventBuilder(AuditlogTypeIds.NETWORK_CONNECT)
+                .message("New connection accepted.")
+                .addParameter("qualifier", qualifier)
+                .addParameter("socket", socketChannel.socket())
+                .log();
             if (serverContext.isSocketInterceptorEnabled(qualifier)) {
                 serverContext.executeAsync(() -> newConnection0(connectionManager, channel));
             } else {

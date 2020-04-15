@@ -91,7 +91,7 @@ public class UnifiedProtocolDecoder
             String protocol = loadProtocol();
 
             serverContext.getAuditLogService()
-                .eventBuilder(AuditlogTypeIds.CONNECTION_ASKS_PROTOCOL)
+                .eventBuilder(AuditlogTypeIds.NETWORK_SELECT_PROTOCOL)
                 .message("Protocol bytes received for a connection")
                 .level(Level.DEBUG)
                 .addParameter("protocol", protocol)

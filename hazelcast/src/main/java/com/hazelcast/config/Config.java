@@ -43,7 +43,6 @@ import com.hazelcast.internal.config.SetConfigReadOnly;
 import com.hazelcast.internal.config.TopicConfigReadOnly;
 import com.hazelcast.internal.config.XmlConfigLocator;
 import com.hazelcast.internal.config.YamlConfigLocator;
-import com.hazelcast.internal.util.Preconditions;
 import com.hazelcast.map.IMap;
 import com.hazelcast.multimap.MultiMap;
 import com.hazelcast.partition.strategy.StringPartitioningStrategy;
@@ -177,6 +176,8 @@ public class Config {
     private CPSubsystemConfig cpSubsystemConfig = new CPSubsystemConfig();
 
     private MetricsConfig metricsConfig = new MetricsConfig();
+
+    private AuditlogConfig auditlogConfig = new AuditlogConfig();
 
     public Config() {
     }
@@ -2624,8 +2625,18 @@ public class Config {
      */
     @Nonnull
     public Config setMetricsConfig(@Nonnull MetricsConfig metricsConfig) {
-        Preconditions.checkNotNull(metricsConfig, "metricsConfig");
-        this.metricsConfig = metricsConfig;
+        this.metricsConfig = checkNotNull(metricsConfig, "metricsConfig");
+        return this;
+    }
+
+    @Nonnull
+    public AuditlogConfig getAuditlogConfig() {
+        return auditlogConfig;
+    }
+
+    @Nonnull
+    public Config setAuditlogConfig(@Nonnull AuditlogConfig auditlogConfig) {
+        this.auditlogConfig = checkNotNull(auditlogConfig, "auditlogConfig");
         return this;
     }
 
@@ -2686,6 +2697,7 @@ public class Config {
                 + ", liteMember=" + liteMember
                 + ", cpSubsystemConfig=" + cpSubsystemConfig
                 + ", metricsConfig=" + metricsConfig
+                + ", auditlogConfig=" + auditlogConfig
                 + '}';
     }
 }

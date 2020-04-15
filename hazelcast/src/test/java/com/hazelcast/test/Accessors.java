@@ -23,6 +23,7 @@ import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.instance.impl.HazelcastInstanceImpl;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.instance.impl.TestUtil;
+import com.hazelcast.internal.auditlog.AuditlogService;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.server.ServerConnectionManager;
@@ -95,6 +96,10 @@ public class Accessors {
 
     public static MetricsRegistry getMetricsRegistry(HazelcastInstance hz) {
         return getNodeEngineImpl(hz).getMetricsRegistry();
+    }
+
+    public static AuditlogService getAuditlogService(HazelcastInstance hz) {
+        return getNode(hz).getNodeExtension().getAuditlogService();
     }
 
     public static Address getAddress(HazelcastInstance hz) {

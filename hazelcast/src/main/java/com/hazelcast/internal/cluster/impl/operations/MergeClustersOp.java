@@ -17,6 +17,7 @@
 package com.hazelcast.internal.cluster.impl.operations;
 
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.auditlog.impl.AuditlogTypeIds;
 import com.hazelcast.internal.cluster.impl.ClusterDataSerializerHook;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.logging.ILogger;
@@ -57,7 +58,11 @@ public class MergeClustersOp extends AbstractClusterOperation {
 
         logger.warning(node.getThisAddress() + " is merging to " + newTargetAddress
                 + ", because: instructed by master " + masterAddress);
-
+        node.getNodeExtension().getAuditlogService().eventBuilder(AuditlogTypeIds.CLUSTER_MERGE)
+            .message("Merging this cluster into another one")
+            .addParameter("masterAddress", masterAddress)
+            .addParameter("targetAddress", newTargetAddress)
+            .log();
         nodeEngine.getExecutionService().execute(SPLIT_BRAIN_HANDLER_EXECUTOR_NAME, () -> clusterService.merge(newTargetAddress));
     }
 

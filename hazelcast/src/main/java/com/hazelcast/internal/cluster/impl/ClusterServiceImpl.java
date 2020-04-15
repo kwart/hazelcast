@@ -30,6 +30,7 @@ import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.instance.impl.HazelcastInstanceImpl;
 import com.hazelcast.instance.impl.LifecycleServiceImpl;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.auditlog.impl.AuditlogTypeIds;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.cluster.impl.operations.ExplicitSuspicionOp;
 import com.hazelcast.internal.cluster.impl.operations.OnJoinOp;
@@ -400,7 +401,11 @@ public class ClusterServiceImpl implements ClusterService, ConnectionListener, M
             membershipManager.updateMembers(membersView);
             clusterHeartbeatManager.heartbeat();
             setJoined(true);
-
+            node.getNodeExtension().getAuditlogService()
+                .eventBuilder(AuditlogTypeIds.CLUSTER_MEMBER_ADDED)
+                .message("Member joined")
+                .addParameter("membersView", membersView)
+                .log();
             return true;
         } finally {
             lock.unlock();
@@ -876,6 +881,9 @@ public class ClusterServiceImpl implements ClusterService, ConnectionListener, M
             changeClusterState(ClusterState.PASSIVE, options, true);
         }
 
+        node.getNodeExtension().getAuditlogService().eventBuilder(AuditlogTypeIds.CLUSTER_SHUTDOWN)
+            .message("Shutting down the cluster")
+            .log();
         long timeoutNanos = node.getProperties().getNanos(ClusterProperty.CLUSTER_SHUTDOWN_TIMEOUT_SECONDS);
         long startNanos = Timer.nanos();
         node.getNodeExtension().getInternalHotRestartService()
@@ -990,7 +998,12 @@ public class ClusterServiceImpl implements ClusterService, ConnectionListener, M
             }
 
             MemberImpl localMemberInMemberList = membershipManager.getMember(member.getAddress());
-            if (localMemberInMemberList.isLiteMember()) {
+            boolean result = localMemberInMemberList.isLiteMember();
+            node.getNodeExtension().getAuditlogService().eventBuilder(AuditlogTypeIds.CLUSTER_PROMOTE_MEMBER)
+                .message("Promotion of the lite member")
+                .addParameter("success", result)
+                .log();
+            if (result) {
                 throw new IllegalStateException("Cannot promote to data member! Previous master was: " + master.getAddress()
                         + ", Current master is: " + getMasterAddress());
             }

@@ -20,6 +20,7 @@ import com.hazelcast.cluster.Address;
 import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.instance.impl.NodeExtension;
+import com.hazelcast.internal.auditlog.impl.NoOpAuditlogService;
 import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.internal.util.Clock;
@@ -35,7 +36,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -79,7 +80,8 @@ public class ClusterStateManagerTest {
     public void setup() {
         NodeExtension nodeExtension = mock(NodeExtension.class);
         when(nodeExtension.isStartCompleted()).thenReturn(true);
-        when(nodeExtension.isNodeVersionCompatibleWith(Matchers.any(Version.class))).thenReturn(true);
+        when(nodeExtension.getAuditlogService()).thenReturn(NoOpAuditlogService.INSTANCE);
+        when(nodeExtension.isNodeVersionCompatibleWith(ArgumentMatchers.any(Version.class))).thenReturn(true);
 
         when(node.getPartitionService()).thenReturn(partitionService);
         when(node.getClusterService()).thenReturn(clusterService);

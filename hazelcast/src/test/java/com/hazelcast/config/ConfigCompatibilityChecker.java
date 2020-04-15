@@ -128,6 +128,8 @@ public class ConfigCompatibilityChecker {
                 singletonMap("", c2.getSecurityConfig()), new SecurityConfigChecker());
         checkCompatibleConfigs("cp subsystem", c1, c2, singletonMap("", c1.getCPSubsystemConfig()),
                 singletonMap("", c2.getCPSubsystemConfig()), new CPSubsystemConfigChecker());
+        checkCompatibleConfigs("auditlog", c1, c2, singletonMap("", c1.getAuditlogConfig()),
+                singletonMap("", c2.getAuditlogConfig()), new AuditlogConfigChecker());
 
         return true;
     }
@@ -1264,6 +1266,17 @@ public class ConfigCompatibilityChecker {
                     && nullSafeEqual(
                         classNameOrImpl(c1.getFactoryClassName(), c1.getFactoryImplementation()),
                         classNameOrImpl(c2.getFactoryClassName(), c2.getFactoryImplementation()))
+                    && nullSafeEqual(c1.getProperties(), c2.getProperties()));
+        }
+    }
+
+    public static class AuditlogConfigChecker extends ConfigChecker<AuditlogConfig> {
+        @Override
+        boolean check(AuditlogConfig c1, AuditlogConfig c2) {
+            boolean c1Disabled = c1 == null || !c1.isEnabled();
+            boolean c2Disabled = c2 == null || !c2.isEnabled();
+            return c1 == c2 || (c1Disabled && c2Disabled) || (c1 != null && c2 != null
+                    && nullSafeEqual(c1.getFactoryClassName(), c2.getFactoryClassName())
                     && nullSafeEqual(c1.getProperties(), c2.getProperties()));
         }
     }
