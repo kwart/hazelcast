@@ -20,11 +20,13 @@ Copyright (c) 2008-2020 Hazelcast, Inc. All rights reserved.
 This product includes the following libraries with the following licenses:
 
 Apache License, Version 2.0
+  Jackson-core:2.9.7
   Guava: Google Core Libraries for Java:19.0
   project ':json-path':2.4.0
   Calcite Core:1.22.0
   Calcite Linq4j:1.22.0
   Apache Calcite Avatica:1.16.0
+  SnakeYAML Engine:1.0
 BSD 3-Clause License
   commons-compiler:3.0.11
   janino:3.0.11
