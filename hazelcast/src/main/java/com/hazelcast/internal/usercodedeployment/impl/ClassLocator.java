@@ -164,7 +164,12 @@ public final class ClassLocator {
                 } else if (ThreadLocalClassCache.getFromCache(mainClassName) != null) {
                     classSource = ThreadLocalClassCache.getFromCache(mainClassName);
                 } else {
-                    classSource = new ClassSource(parent, this, Collections.EMPTY_MAP);
+                    classSource = doPrivileged(new PrivilegedAction<ClassSource>() {
+                        @Override
+                        public ClassSource run() {
+                            return new ClassSource(parent, ClassLocator.this, Collections.<String, byte[]>emptyMap());
+                        }
+                    });
                 }
                 ClassData classData = fetchBytecodeFromRemote(name);
                 if (classData == null) {
@@ -172,10 +177,8 @@ public final class ClassLocator {
                 }
 
                 Map<String, byte[]> innerClassDefinitions = classData.getInnerClassDefinitions();
+                classSource.setUndefinedClasses(innerClassDefinitions);
                 classSource.define(name, classData.getMainClassDefinition());
-                for (Map.Entry<String, byte[]> entry : innerClassDefinitions.entrySet()) {
-                    classSource.define(entry.getKey(), entry.getValue());
-                }
                 cacheClass(classSource, mainClassName);
                 return classSource.getClazz(name);
             }
