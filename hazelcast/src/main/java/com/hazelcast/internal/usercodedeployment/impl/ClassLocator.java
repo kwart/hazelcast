@@ -177,10 +177,8 @@ public final class ClassLocator {
                 }
 
                 Map<String, byte[]> innerClassDefinitions = classData.getInnerClassDefinitions();
+                classSource.setUndefinedClasses(innerClassDefinitions);
                 classSource.define(name, classData.getMainClassDefinition());
-                for (Map.Entry<String, byte[]> entry : innerClassDefinitions.entrySet()) {
-                    classSource.define(entry.getKey(), entry.getValue());
-                }
                 cacheClass(classSource, mainClassName);
                 return classSource.getClazz(name);
             }
