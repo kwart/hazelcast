@@ -98,7 +98,7 @@ public final class ClassDataProvider {
 
         Map<String, byte[]> innerClassDefinitions = new HashMap<String, byte[]>();
         loadInnerClasses(className, innerClassDefinitions);
-        loadAnonymousClasses(className, innerClassDefinitions);
+//        System.err.println(">>>> INNER classes " + innerClassDefinitions.keySet());
 
         ClassData classData = new ClassData();
         if (! innerClassDefinitions.isEmpty()) {
@@ -127,12 +127,16 @@ public final class ClassDataProvider {
     private Map<String, byte[]> loadProtectedParents(Class<?> clazz, Map<String, byte[]> innerClassDefinitions) {
         Class<?> parentClass = clazz.getSuperclass();
         while (parentClass != null && !Modifier.isPublic(parentClass.getModifiers())) {
-            addInnerClass(innerClassDefinitions, parentClass.getName());
+            String name = parentClass.getName();
+            addInnerClass(innerClassDefinitions, name);
+            loadInnerClasses(name, innerClassDefinitions);
             parentClass = parentClass.getSuperclass();
         }
         for (Class<?> ifaceClass : getInterfaces(clazz, new HashSet<>())) {
             if (!Modifier.isPublic(ifaceClass.getModifiers())) {
-                addInnerClass(innerClassDefinitions, ifaceClass.getName());
+                String name = ifaceClass.getName();
+                addInnerClass(innerClassDefinitions, name);
+                loadInnerClasses(name, innerClassDefinitions);
             }
         }
         return innerClassDefinitions;
@@ -161,10 +165,13 @@ public final class ClassDataProvider {
         try {
             Class<?> aClass = parent.loadClass(className);
             innerClassDefinitions = loadProtectedParents(aClass, innerClassDefinitions);
+            loadAnonymousClasses(className, innerClassDefinitions);
             Class<?>[] declaredClasses = aClass.getDeclaredClasses();
             for (Class<?> declaredClass : declaredClasses) {
-                addInnerClass(innerClassDefinitions, declaredClass.getName());
+                String name = declaredClass.getName();
+                addInnerClass(innerClassDefinitions, name);
                 loadProtectedParents(declaredClass, innerClassDefinitions);
+                loadInnerClasses(name, innerClassDefinitions);
             }
         } catch (ClassNotFoundException e) {
             ignore(e);
