@@ -230,16 +230,26 @@
                                     <include>com.fasterxml.jackson.core:jackson-core</include>
                                     <include>org.snakeyaml:snakeyaml-engine</include>
                                     <include>com.hazelcast:hazelcast-client-protocol</include>
+                                    <include>org.reflections:reflections</include>
+                                    <include>org.javassist:javassist</include>
                                 </includes>
                             </artifactSet>
                             <relocations>
                                 <relocation>
-                                    <pattern>com.fasterxml.jackson</pattern>
-                                    <shadedPattern>com.hazelcast.com.fasterxml.jackson</shadedPattern>
+                                    <pattern>com.fasterxml</pattern>
+                                    <shadedPattern>com.hazelcast.com.fasterxml</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.snakeyaml</pattern>
                                     <shadedPattern>com.hazelcast.org.snakeyaml</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.reflections</pattern>
+                                    <shadedPattern>com.hazelcast.org.reflections</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>javassist</pattern>
+                                    <shadedPattern>com.hazelcast.javassist</shadedPattern>
                                 </relocation>
                             </relocations>
                             <transformers>
@@ -475,6 +485,17 @@
             <artifactId>RoaringBitmap</artifactId>
             <version>0.8.11</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>${reflections.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 </project>

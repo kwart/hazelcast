@@ -148,11 +148,11 @@ public final class ClassLocator {
         // we need to acquire a classloading lock before defining a class
         // Java 7+ can use locks with per-class granularity while Java 6 has to use a single lock
         // mutexFactory abstract these differences away
-        String mainClassName = extractMainClassName(name);
-        Closeable classMutex = mutexFactory.getMutexForClass(mainClassName);
+        String packageName = extractPackageName(name);
+        Closeable classMutex = mutexFactory.getMutexForClass(packageName);
         try {
             synchronized (classMutex) {
-                ClassSource classSource = classSourceMap.get(mainClassName);
+                ClassSource classSource = classSourceMap.get(packageName);
                 if (classSource != null) {
                     Class clazz = classSource.getClazz(name);
                     if (clazz != null) {
@@ -161,8 +161,8 @@ public final class ClassLocator {
                         }
                         return clazz;
                     }
-                } else if (ThreadLocalClassCache.getFromCache(mainClassName) != null) {
-                    classSource = ThreadLocalClassCache.getFromCache(mainClassName);
+                } else if (ThreadLocalClassCache.getFromCache(packageName) != null) {
+                    classSource = ThreadLocalClassCache.getFromCache(packageName);
                 } else {
                     classSource = doPrivileged(new PrivilegedAction<ClassSource>() {
                         @Override
@@ -179,7 +179,7 @@ public final class ClassLocator {
                 Map<String, byte[]> innerClassDefinitions = classData.getInnerClassDefinitions();
                 classSource.setUndefinedClasses(innerClassDefinitions);
                 classSource.define(name, classData.getMainClassDefinition());
-                cacheClass(classSource, mainClassName);
+                cacheClass(classSource, packageName);
                 return classSource.getClazz(name);
             }
         } finally {
@@ -224,6 +224,14 @@ public final class ClassLocator {
             return matcher.group(1);
         }
         return className;
+    }
+
+    static String extractPackageName(String className) {
+        int dotIdx = className.lastIndexOf('.');
+        if (dotIdx>-1) {
+            return className.substring(0, dotIdx);
+        }
+        return "";
     }
 
     // called while holding class lock

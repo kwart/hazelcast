@@ -16,21 +16,32 @@
 
 package com.hazelcast.internal.usercodedeployment.impl;
 
-import com.hazelcast.config.UserCodeDeploymentConfig;
-import com.hazelcast.logging.ILogger;
-import com.hazelcast.nio.IOUtil;
+import static com.hazelcast.nio.IOUtil.toByteArray;
+import static com.hazelcast.util.EmptyStatement.ignore;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
-import static com.hazelcast.nio.IOUtil.toByteArray;
-import static com.hazelcast.util.EmptyStatement.ignore;
+import org.reflections.Reflections;
+import org.reflections.ReflectionsException;
+import org.reflections.Store;
+import org.reflections.scanners.AbstractScanner;
+import org.reflections.scanners.ResourcesScanner;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
+import org.reflections.util.FilterBuilder;
+
+import com.hazelcast.config.UserCodeDeploymentConfig;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.nio.IOUtil;
 
 /**
  * Provides {@link ClassData} to remote members.
@@ -57,9 +68,9 @@ public final class ClassDataProvider {
     }
 
     public ClassData getClassDataOrNull(String className) {
-        if (logger.isFinestEnabled()) {
-            logger.finest("Searching ClassData for " + className);
-        }
+//        if (logger.isFinestEnabled()) {
+            logger.info("Searching ClassData for " + className);
+//        }
         ClassData classData = loadBytecodesFromClientCache(className);
         if (classData != null) {
             return classData;
@@ -97,8 +108,10 @@ public final class ClassDataProvider {
         }
 
         Map<String, byte[]> innerClassDefinitions = new HashMap<String, byte[]>();
-        loadInnerClasses(className, innerClassDefinitions);
-//        System.err.println(">>>> INNER classes " + innerClassDefinitions.keySet());
+//        loadInnerClasses(className, innerClassDefinitions);
+        loadPackageClasses(className, innerClassDefinitions);
+        innerClassDefinitions.remove(className);
+        System.err.println(">>>> loadBytecodesFromParent " + className + " " + innerClassDefinitions.keySet());
 
         ClassData classData = new ClassData();
         if (! innerClassDefinitions.isEmpty()) {
@@ -179,6 +192,25 @@ public final class ClassDataProvider {
         return innerClassDefinitions;
     }
 
+    private Map<String, byte[]> loadPackageClasses(String className, Map<String, byte[]> innerClassDefinitions) {
+        try {
+            Class<?> aClass = parent.loadClass(className);
+            String pkgName = aClass.getPackage().getName();
+            Reflections reflections = new Reflections(new ConfigurationBuilder()
+                    .setScanners(new PackageScanner(pkgName))
+                    .addUrls(ClasspathHelper.forPackage(pkgName))
+                    .filterInputsBy(new FilterBuilder().include(FilterBuilder.prefix(pkgName))));
+            for (String typeName : reflections.getStore().getAll(PackageScanner.class, "pkg")) {
+                addInnerClass(innerClassDefinitions, typeName);
+            }
+        } catch (ClassNotFoundException e) {
+            ignore(e);
+        } catch (ReflectionsException e) {
+            ignore(e);
+        }
+        return innerClassDefinitions;
+    }
+
     private byte[] loadBytecodeFromParent(String className) {
         String resource = className.replace('.', '/').concat(".class");
         InputStream is = null;
@@ -196,4 +228,24 @@ public final class ClassDataProvider {
         }
         return null;
     }
+    
+    static class PackageScanner extends AbstractScanner {
+
+        /** created new SubTypesScanner. will exclude direct Object subtypes */
+        public PackageScanner(final String pkg) {
+            filterResultsBy(s-> {
+                int idx = s.lastIndexOf('.');
+                return pkg.equals(idx>=0?s.substring(0, idx):"");
+            });
+        }
+
+        @SuppressWarnings({"unchecked"})
+        public void scan(final Object cls, Store store) {
+            String className = getMetadataAdapter().getClassName(cls);
+            if (acceptResult(className)) {
+                put(store, "pkg", className);
+            }
+        }
+    }
+
 }
