@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="Hazelcast" default="installer" basedir=".">
+
+    <description>Builds Hazelcast distro</description>
+    <import file="properties.xml" />
+
+    <target name="clean">
+        <echo message="Cleaning build" />
+        <delete dir="${build.dir}" />
+    </target>
+
+    <target name="prepare" depends="clean">
+        <echo message="Preparing directory structure for the build" />
+        <mkdir dir="${build.dir}" />
+
+        <unzip src="target/hazelcast-${hazelcast.version}.zip" dest="${build.dir}" />
+
+        <echo message="Unpacking JRE" />
+        <unzip src="${jre.zip.path}" dest="${dist.dir}" />
+        <rename src="${dist.dir}/${jre.zip.folderName}" dest="${dist.dir}/jre" />
+        <copy todir="${dist.dir}" file="src/main/resources/hazelcast.ico"/>
+    </target>
+
+    <target name="launcher" depends="prepare">
+        <echo message="Creating windows launcher (EXE)" />
+
+        <untar compression="gzip" src="${launch4j.tgz.path}" dest="${build.dir}" />
+        <chmod file="${build.dir}/${launch4j.tgz.forlderName}/bin/windres" perm="+x" />
+        <chmod file="${build.dir}/${launch4j.tgz.forlderName}/bin/ld" perm="+x" />
+
+        <taskdef name="launch4j"
+            classname="net.sf.launch4j.ant.Launch4jTask"
+            classpath="${build.dir}/${launch4j.tgz.forlderName}/launch4j.jar
+                :${build.dir}/${launch4j.tgz.forlderName}/lib/xstream.jar" />
+
+        <launch4j>
+            <!--
+            convert /tmp/hazelcast-logo-bug_sm.png -define icon:auto-resize="256,128,96,64,48,32,16" src/main/resources/hazelcast.ico
+            -->
+            <config headerType="console"
+                outfile="${dist.dir}/bin/Hazelcast.exe"
+                dontWrapJar="true"
+                jarPath="../lib/hazelcast-${hazelcast.version}.jar"
+                icon="src/main/resources/hazelcast.ico">
+                <jre path="../jre" />
+                <versionInfo fileVersion="${hazelcast.version.windows}" txtFileVersion="Hazelcast IMDG v. ${hazelcast.version}" 
+                    fileDescription="Launcher for Hazelcast member"
+                    copyright="Hazelcast"
+                    productVersion="${hazelcast.version.windows}"
+                    txtProductVersion="Runs Hazelcast IMDG Member"
+                    productName="Hazelcast IMDG"
+                    internalName="Hazelcast IMDG"
+                    originalFilename="Hazelcast.exe" />
+            </config>
+        </launch4j>
+        <copy file="src/main/resources/launch4j-template.l4j.ini" tofile="${dist.dir}/bin/Hazelcast.l4j.ini" />
+
+        <launch4j>
+            <config headerType="console"
+                outfile="${dist.dir}/bin/HazelcastClient.exe"
+                dontWrapJar="true"
+                icon="src/main/resources/console-app.ico">
+                <classPath mainClass="com.hazelcast.client.console.ClientConsoleApp">
+                    <!-- TODO: version parameter -->
+                    <cp>../lib/hazelcast-4.1-SNAPSHOT.jar</cp>
+                </classPath>
+                <jre path="../jre" />
+                <versionInfo fileVersion="${hazelcast.version.windows}" txtFileVersion="Hazelcast IMDG v. ${hazelcast.version}" 
+                    fileDescription="Launcher for Hazelcast demo client"
+                    copyright="Hazelcast"
+                    productVersion="${hazelcast.version.windows}"
+                    txtProductVersion="Runs Hazelcast IMDG demo client"
+                    productName="Hazelcast IMDG demo client"
+                    internalName="Hazelcast IMDG demo client"
+                    originalFilename="HazelcastClient.exe" />
+            </config>
+        </launch4j>
+        <copy file="src/main/resources/launch4j-template.l4j.ini" tofile="${dist.dir}/bin/HazelcastClient.l4j.ini" />
+    </target>
+
+    <target name="installer" depends="launcher">
+        <echo message="Creating a Windows installer" />
+        <exec failonerror="false" executable="src/main/resources/iscc">
+            <arg line="${dist.dir}" />
+            <arg line="${build.dir}" />
+            <arg line="/DMyAppName=Hazelcast" />
+            <arg line="/DMyAppVersion=${hazelcast.version}" />
+            <arg line="/DMyAppVersionWin=${hazelcast.version.windows}" />
+            <arg line="/DMyAppId=Hazelcast" />
+        </exec>
+    </target>
+
+</project>
