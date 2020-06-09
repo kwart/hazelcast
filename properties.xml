@@ -3,15 +3,12 @@
     <property name="hazelcast.version.base" value="4.1"/>
     <property name="hazelcast.version.suffix" value="-SNAPSHOT"/>
     <property name="hazelcast.version.windows" value="${hazelcast.version.base}.0.0"/>
-    <property name="hazelcast.version" value="${hazelcast.version.base}${hazelcast.version.suffix}" />
+
     <property name="launch4j.tgz.path" value="/home/kwart/install/launch4j-3.12-linux.tgz" />
+    <property name="launch4j.tgz.forlderName" value="launch4j" />
+
     <property name="jre.zip.path" value="/home/kwart/install/zulu11.39.15-ca-jre11.0.7-win_x64.zip" />
     <property name="jre.zip.folderName" value="zulu11.39.15-ca-jre11.0.7-win_x64" />
 
-    <property name="app.dir" value="hazelcast-${hazelcast.version}" />
-
-    <property name="build.dir" value="${basedir}/target/win-distro" />
-    <property name="dist.dir" value="${build.dir}/${app.dir}" />
-
-    <property name="launch4j.tgz.forlderName" value="launch4j" />
+    <property name="commons-daemon.zip.path" value="/home/kwart/install/commons-daemon-1.2.1-bin-windows.zip" />
 </project>

@@ -5,6 +5,11 @@
     <description>Builds Hazelcast distro</description>
     <import file="properties.xml" />
 
+    <property name="hazelcast.version" value="${hazelcast.version.base}${hazelcast.version.suffix}" />
+    <property name="app.dir" value="hazelcast-${hazelcast.version}" />
+    <property name="build.dir" value="${basedir}/target/win-distro" />
+    <property name="dist.dir" value="${build.dir}/${app.dir}" />
+
     <target name="clean">
         <echo message="Cleaning build" />
         <delete dir="${build.dir}" />
@@ -15,11 +20,16 @@
         <mkdir dir="${build.dir}" />
 
         <unzip src="target/hazelcast-${hazelcast.version}.zip" dest="${build.dir}" />
+        <delete dir="${dist.dir}/lib" excludes="hazelcast-${hazelcast.version}.jar"/>
 
         <echo message="Unpacking JRE" />
-        <unzip src="${jre.zip.path}" dest="${dist.dir}" />
+        <unzip src="${jre.zip.path}" dest="${dist.dir}"/>
         <rename src="${dist.dir}/${jre.zip.folderName}" dest="${dist.dir}/jre" />
-        <copy todir="${dist.dir}" file="src/main/resources/hazelcast.ico"/>
+
+        <unzip src="${commons-daemon.zip.path}" dest="${build.dir}/commons-daemon" />
+        <copy file="${build.dir}/commons-daemon/amd64/prunsrv.exe" todir="${dist.dir}/bin"/>
+
+        <copy todir="${dist.dir}/bin" file="src/main/resources/logging.properties"/>
     </target>
 
     <target name="launcher" depends="prepare">
@@ -62,8 +72,7 @@
                 dontWrapJar="true"
                 icon="src/main/resources/console-app.ico">
                 <classPath mainClass="com.hazelcast.client.console.ClientConsoleApp">
-                    <!-- TODO: version parameter -->
-                    <cp>../lib/hazelcast-4.1-SNAPSHOT.jar</cp>
+                    <cp>../lib/*.jar</cp>
                 </classPath>
                 <jre path="../jre" />
                 <versionInfo fileVersion="${hazelcast.version.windows}" txtFileVersion="Hazelcast IMDG v. ${hazelcast.version}" 
