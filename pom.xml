@@ -104,7 +104,7 @@
         <!--<sonar.phase>post-integration-test</sonar.phase>-->
         <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
         <sonar.language>java</sonar.language>
-        <sonar.verbose>true</sonar.verbose>
+        <sonar.verbose>false</sonar.verbose>
 
         <checkstyle.version>8.29</checkstyle.version>
 
