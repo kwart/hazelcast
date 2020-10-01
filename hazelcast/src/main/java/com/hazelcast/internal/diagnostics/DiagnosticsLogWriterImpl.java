@@ -22,6 +22,9 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
+
 import static com.hazelcast.util.StringUtil.LINE_SEPARATOR;
 import static com.hazelcast.util.StringUtil.LOCALE_INTERNAL;
 import static java.util.Calendar.DAY_OF_MONTH;
@@ -42,15 +45,18 @@ public class DiagnosticsLogWriterImpl implements DiagnosticsLogWriter {
     private static final char[] DIGITS = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
 
     private static final String[] INDENTS = new String[]{
+            LINE_SEPARATOR,
             LINE_SEPARATOR + "                          ",
             LINE_SEPARATOR + "                                  ",
             LINE_SEPARATOR + "                                          ",
             LINE_SEPARATOR + "                                                  ",
-            LINE_SEPARATOR + "                                                            ",
+            LINE_SEPARATOR + "                                                          ",
     };
 
     // 32 chars should be more than enough to encode primitives
     private static final int CHARS_LENGTH = 32;
+
+    private final ILogger logger;
 
     private final StringBuilder tmpSb = new StringBuilder();
     private final boolean includeEpochTime;
@@ -69,11 +75,12 @@ public class DiagnosticsLogWriterImpl implements DiagnosticsLogWriter {
     private StringBuilder stringBuilder = new StringBuilder();
 
     public DiagnosticsLogWriterImpl() {
-        this(false);
+        this(false, null);
     }
 
-    public DiagnosticsLogWriterImpl(boolean includeEpochTime) {
+    public DiagnosticsLogWriterImpl(boolean includeEpochTime, ILogger logger) {
         this.includeEpochTime = includeEpochTime;
+        this.logger = logger != null ? logger : Logger.getLogger(getClass());
     }
 
     @Override
@@ -119,19 +126,27 @@ public class DiagnosticsLogWriterImpl implements DiagnosticsLogWriter {
             }
         }
 
-        if (sectionLevel >= 0) {
-            write(INDENTS[sectionLevel]);
-        }
+        write(INDENTS[sectionLevel + 1]);
 
         write(name);
         write('[');
-        sectionLevel++;
+        if (sectionLevel < INDENTS.length - 2) {
+            sectionLevel++;
+        } else {
+            logger.warning("Diagnostics writer SectionLevel has overflown.", new Exception("Dumping stack trace"));
+            sectionLevel = INDENTS.length - 2;
+        }
     }
 
     @Override
     public void endSection() {
         write(']');
-        sectionLevel--;
+        if (sectionLevel > -1) {
+            sectionLevel--;
+        } else {
+            logger.warning("Diagnostics writer SectionLevel has underflown.", new Exception("Dumping stack trace"));
+            sectionLevel = -1;
+        }
 
         if (sectionLevel == -1) {
             write(LINE_SEPARATOR);
@@ -140,7 +155,7 @@ public class DiagnosticsLogWriterImpl implements DiagnosticsLogWriter {
 
     @Override
     public void writeEntry(String s) {
-        write(INDENTS[sectionLevel]);
+        write(INDENTS[sectionLevel + 1]);
         write(s);
     }
 
@@ -208,7 +223,7 @@ public class DiagnosticsLogWriterImpl implements DiagnosticsLogWriter {
     }
 
     private void writeKeyValueHead(String key) {
-        write(INDENTS[sectionLevel]);
+        write(INDENTS[sectionLevel + 1]);
         write(key);
         write('=');
     }
