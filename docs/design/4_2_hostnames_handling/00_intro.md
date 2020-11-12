@@ -26,19 +26,19 @@ Allow a seamless usage of hostnames in the member configuration (e.g. cluster me
 ## Motivation
 
 Hazelcast as a distributed system depends on networking. It fully supports member addressing through IP addresses.
-It's not sufficient for some usecases where hostnames plays an important role.
+It's not sufficient for some use-cases where hostnames play an important role.
 
 ## Description
 
 The initial step towards the resolution was taken in [PR #16326](https://github.com/hazelcast/hazelcast/pull/16326)
-(Hazelcast 4.0). It introduced unique member identifier (UUID) into the `BindMessage`. The code became part of the
+(Hazelcast 4.0). It introduced a unique member identifier (UUID) into the `BindMessage`. The code became part of the
 `MemberHandshake` and `ServerContext` classes during code reorganization in Hazelcast 4.1 (see 
 [PR #16814](https://github.com/hazelcast/hazelcast/pull/16814), [PR #16889](https://github.com/hazelcast/hazelcast/pull/16889)).
 
 The UUID will be used as a replacement for the `Address` instances when referencing other members
-(e.g. in map of existing member-to-member connections).
+(e.g. in a map of existing member-to-member connections).
 
-As we don't know UUIDs of other members upfront, connections will need to be established purely on the address basis
+As we don't know the UUIDs of other members upfront, connections will need to be established purely on the address basis
 and they will be moved to the UUID-based map once confirmed.
 
 Mapping mechanisms will be introduced:
@@ -52,19 +52,19 @@ Mapping mechanisms will be introduced:
 * How should the member-list look like?
 
 **Input for estimations**
-There is cca 420 (+73 enterprise) Java classes importing the `com.hazelcast.cluster.Address` in Hazelcast 4.1.
-Out of it, cca 255 (+35) are artifact ones and the rest is in the testsuite.
+There are ~ 420 (+73 enterprise) Java classes importing the `com.hazelcast.cluster.Address` in Hazelcast 4.1.
+Out of it, ~ 255 (+35) are artifact ones and the rest is in the testsuite.
 
 These places need to be checked if they require changes related to new mappings.
 
 ## Alternatives
 
-Support IP-addressing only: It's the current approach which prevents using Hazelcast in some scenarios. 
+Support IP-addressing only: It's the current approach that prevents using Hazelcast in some scenarios.
 
 ## Testing
 
-* Verify that hostnames in TCP-IP member configuration works;
-* verify that hostnames in WAN configuration works;
+* Verify that hostnames in TCP-IP member configuration work;
+* verify that hostnames in WAN configuration work;
 * verify that a hostname available only after the member starts works when used for establishing connections from other members;
 * verify that it's possible to use multiple hostnames to reference one member;
 * *(Enterprise)* verify Hot Restart remains working;
