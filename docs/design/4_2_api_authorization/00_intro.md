@@ -28,6 +28,48 @@ to resolve it with the current permission form.
 * Introduce mapping for "implies" (e.g. `map.put` permission implies both `map.put()` and `map.set()`)
 
 
+**Current form of permission definition**
+```xml
+<map-permission name="custom" principal="dev">
+    <endpoints>
+        <endpoint>127.0.0.1</endpoint>
+    </endpoints>
+    <actions>
+        <action>create</action>
+        <action>put</action>
+    </actions>
+</map-permission>
+```
+
+**Simple authorization extension on method level**
+```xml
+<map-permission name="custom" principal="dev">
+    <endpoints>
+        <endpoint>127.0.0.1</endpoint>
+    </endpoints>
+    <actions>
+        <action>create</action>
+        <action>set()</action>
+        <action>put()</action>
+    </actions>
+</map-permission>
+```
+
+**Authorization extension with deny rules**
+*(if we decide for the deny rules)*
+This introduces `root-policy` configuration on `client-permissions` config with values `allow` and `deny` (default).
+Each permission would have then the optional `deny` attribute (defaulting to `false` for backward compatibility).
+```xml
+<client-permissions on-join-operation="RECEIVE" root-policy="allow">
+    <map-permission name="default" deny="true">
+        <actions>
+            <action>values()</action>
+            <action>keySet()</action>
+        </actions>
+    </map-permission>
+</client-permissions>
+```
+
 **Open questions**
 
 * Should be the overloaded methods covered by one permission? Or do we need extra permission for each form? (req 1)
@@ -37,6 +79,15 @@ to resolve it with the current permission form.
 
 ## Alternatives
 
+The root rule (allow/deny) configuration could be moved as an option to the `client-permission-policy` param 
+```xml
+<client-permission-policy class-name="com.hazelcast.security.impl.DefaultPermissionPolicy">
+    <properties>
+        <property name="root-rule">allow</property>
+    </properties>
+</client-permission-policy>
+```
+The disadvantage is this wouldn't be covered by the typed-configuration. So it would be more error prone.
 
 ## Testing
 
