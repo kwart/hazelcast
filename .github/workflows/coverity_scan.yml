@@ -1,0 +1,36 @@
+name: Scan with Coverity
+
+on:
+  push:
+    branches:
+      - 'master'
+      - '[0-9]+.[0-9]+.z'
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'kwart'
+    steps:
+      - name: Checkout hazelcast-snapshot repo
+        uses: actions/checkout@v2
+
+      - name: Set up Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Coverity Scan
+        run: |
+          wget -q https://scan.coverity.com/download/linux64 --post-data "token=${{ secrets.COVERITY_TOKEN }}&project=hazelcast%2Fhazelcast" -O coverity_tool.tgz
+          mkdir coverity-scanner
+          tar xzf coverity_tool.tgz --strip 1 -C coverity-scanner
+          coverity-scanner/bin/cov-build --dir cov-int mvn -B clean install -DskipTests
+          tail cov-int/build-log.txt
+          tar czvf hazelcast.tgz cov-int
+          HAZELCAST_VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[' | grep -vi 'download')
+          curl --form token=${{ secrets.COVERITY_TOKEN }} \
+            --form email=josef.cacek@gmail.com \
+            --form file=@hazelcast.tgz \
+            --form version="${HAZELCAST_VERSION}" \
+            --form description="Hazelcast IMDG" \
+            https://scan.coverity.com/builds?project=hazelcast%2Fhazelcast
