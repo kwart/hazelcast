@@ -1,0 +1,39 @@
+name: Build internal snapshot image
+
+on:
+  push:
+    branches:
+      - 'master'
+      - '[0-9]+.[0-9]+.z'
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'kwart'
+    steps:
+      - name: Checkout tools repo
+        uses: actions/checkout@v2
+        with:
+          repository: hazelcast-dockerfiles/hazelcast-snapshot
+          ref: gh-actions
+      - name: Checkout tools repo
+        uses: actions/checkout@v2
+        with:
+          path: hazelcast
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build/Push image
+        run: |
+          TAGS="--tag devopshazelcast/hazelcast:${GITHUB_REF#refs/heads/}"
+          if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
+            TAGS="${TAGS} --tag devopshazelcast/hazelcast-snapshot:latest"
+          fi
+          docker buildx build --push $TAGS .
