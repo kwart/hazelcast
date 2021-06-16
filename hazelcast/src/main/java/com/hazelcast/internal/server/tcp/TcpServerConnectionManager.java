@@ -127,6 +127,8 @@ public class TcpServerConnectionManager extends TcpServerConnectionManagerBase
         Plane plane = getPlane(streamId);
         TcpServerConnection connection = plane.getConnection(address);
         if (connection == null && server.isLive()) {
+            new Exception("getOrConnect " + Thread.currentThread().getName() + ", address: " + address + ", silent: " + silent)
+                    .printStackTrace();
             final AtomicBoolean isNotYetInProgress = new AtomicBoolean();
             plane.addConnectionInProgressIfAbsent(address, key -> {
                 isNotYetInProgress.set(true);
